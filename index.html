@@ -1,0 +1,975 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>섬 풍경 배경화면 스튜디오</title>
+<style>
+  /* D-1 글꼴 (SIL OFL 1.1, fonts/OFL-*.txt) — 앱 폴더에 있어 인터넷 없이도 보임 */
+  @font-face{font-family:"Jua";src:url("fonts/Jua-Regular.woff2") format("woff2");font-display:swap}
+  @font-face{font-family:"Gowun Dodum";src:url("fonts/GowunDodum-Regular.woff2") format("woff2");font-display:swap}
+  @font-face{font-family:"Nunito";src:url("fonts/Nunito-Variable.woff2") format("woff2");font-weight:200 1000;font-display:swap}
+  :root{
+    --cream:#fbf6e9; --card:#fffdf6; --line:#ece3cc; --ink:#4a4033; --sub:#8a7d68;
+    --leaf:#7cc49a; --leaf-d:#4f9e73; --sky:#9fd3ec; --sky-d:#5aa9cf; --sand:#f3e2b3; --warn:#f2b6a0;
+    --r:22px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);color:var(--ink);
+    font-family:"Nunito","Gowun Dodum","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
+    -webkit-tap-highlight-color:transparent}
+  header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--cream);padding:14px 18px 10px;
+    display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line)}
+  header h1{font-size:18px;margin:0;flex:1}
+  .leafmark{width:30px;height:30px;border-radius:50%;background:var(--leaf);display:grid;place-items:center;font-size:17px}
+  .api{font-size:12px;padding:5px 10px;border-radius:99px;background:#fde8e0;color:#a2513a;white-space:nowrap}
+  .api.on{background:#dff3e6;color:var(--leaf-d)}
+  main{max-width:760px;margin:0 auto;padding:16px 16px 110px}
+  .screen{display:none}.screen.active{display:block}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 16px 14px;margin-bottom:14px;
+    box-shadow:0 2px 0 var(--line)}
+  .card h2{font-size:15px;margin:0 0 4px;display:flex;align-items:center;gap:6px}
+  .card p.hint{font-size:12.5px;color:var(--sub);margin:0 0 12px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{border:1.5px solid var(--line);background:#fff;color:var(--ink);border-radius:99px;padding:8px 14px;font-size:14px;cursor:pointer;font-family:inherit}
+  .chip[aria-pressed="true"]{background:var(--leaf);border-color:var(--leaf-d);color:#fff;font-weight:600}
+  .chip:focus-visible,.btn:focus-visible,nav button:focus-visible{outline:3px solid var(--sky-d);outline-offset:2px}
+  .free{margin-top:10px;width:100%;border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;font-size:14px;font-family:inherit;background:#fff;display:none}
+  .free.show{display:block}
+  textarea.free{resize:vertical;line-height:1.5}
+  .exs{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+  .exbtn{text-align:left;border:1.5px dashed var(--line);background:#fff;border-radius:12px;padding:8px 10px;font:inherit;font-size:12.5px;color:var(--sub);cursor:pointer;min-height:44px}
+  .summary{font-size:14px;line-height:1.7;background:var(--sand);border-radius:16px;padding:12px 14px}
+  .summary b{color:var(--leaf-d)}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .btn{flex:1;min-width:140px;border:none;border-radius:18px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;
+    background:var(--leaf);color:#fff;box-shadow:0 3px 0 var(--leaf-d)}
+  .btn.alt{background:var(--sky);color:#24546b;box-shadow:0 3px 0 var(--sky-d)}
+  .btn.ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line);box-shadow:none}
+  .btn:disabled{background:#e7e1d3;color:#a69c88;box-shadow:none;cursor:not-allowed;border:none}
+  .soon{display:block;font-size:11px;font-weight:500;margin-top:2px}
+  .notice{border:1.5px dashed var(--warn);background:#fff6f2;border-radius:16px;padding:12px 14px;font-size:13px;line-height:1.6;color:#8a4a36}
+  .preview{aspect-ratio:9/19.5;max-height:60vh;margin:0 auto 12px;border-radius:20px;border:2px dashed var(--line);background:#fff;
+    display:grid;place-items:center;text-align:center;color:var(--sub);font-size:13px;padding:20px}
+  .empty{text-align:center;color:var(--sub);font-size:14px;padding:40px 10px}
+  .empty .big{font-size:40px;display:block;margin-bottom:8px}
+  .rules li{font-size:13px;line-height:1.7}
+  nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);
+    display:flex;justify-content:space-around;padding:8px 6px calc(8px + env(safe-area-inset-bottom));z-index:5}
+  nav button{background:none;border:none;font-family:inherit;color:var(--sub);font-size:11.5px;display:flex;flex-direction:column;align-items:center;gap:2px;
+    padding:6px 12px;border-radius:14px;cursor:pointer}
+  nav button span{font-size:21px}
+  nav button.active{background:#e9f6ee;color:var(--leaf-d);font-weight:700}
+  .chip{min-height:44px}
+  .free{font-size:16px}  /* 16px 미만이면 아이폰이 입력할 때 화면을 확대함 */
+  .dock{position:sticky;bottom:var(--navh,78px);z-index:4;margin:0 -16px;padding:10px 16px 8px;
+    background:var(--cream);border-top:1px solid var(--line)}
+  .dock .btn{min-width:0;padding:12px 8px}
+  /* 10-B 주민 선택 */
+  .vtools{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+  .vtools input[type=search],.vtools select,.vn{font:inherit;font-size:16px;border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;background:#fff;color:var(--ink);min-height:44px}
+  .vtools input[type=search]{grid-column:1/-1}
+  .vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:8px}
+  .vcard{position:relative}
+  .vsel{width:100%;border:1.5px solid var(--line);background:#fff;border-radius:18px;padding:10px 6px 8px;cursor:pointer;font-family:inherit;color:var(--ink);
+    display:flex;flex-direction:column;align-items:center;gap:2px;min-height:44px}
+  .vsel[aria-pressed="true"]{border-color:var(--leaf-d);background:#e9f6ee;box-shadow:0 0 0 2px var(--leaf) inset}
+  .vsel b{font-size:14px}.vsel small{font-size:11px;color:var(--sub);line-height:1.35}
+  .vfav{position:absolute;top:4px;right:4px;border:none;background:none;font-size:18px;cursor:pointer;width:36px;height:36px;border-radius:50%}
+  .vsel img,.ph{border-radius:50%;background:var(--sand);object-fit:contain}
+  .ph{display:inline-grid;place-items:center;color:#8a6d3b;font-weight:700;font-size:13px;border:2px dashed #e2cf9f;overflow:hidden;line-height:1.1;text-align:center}
+  .vpicked{display:flex;flex-wrap:wrap;gap:6px}
+  .vpicked span.tag{display:inline-flex;align-items:center;gap:4px;background:#e9f6ee;border:1.5px solid var(--leaf);border-radius:99px;padding:3px 4px 3px 4px;font-size:13px}
+  .vpicked button{border:none;background:#fff;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:14px}
+  .vsrc{font-size:12.5px;line-height:1.7;background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-top:8px}
+  .vsrc a{color:var(--sky-d)}
+  /* 10-C 주민대표 */
+  .rimg{display:block;max-width:100%;max-height:300px;margin:0 auto 10px;border-radius:16px;border:1px solid var(--line);background:#fff}
+  .rbox{border:2px dashed var(--line);border-radius:16px;padding:22px 10px;text-align:center;color:var(--sub);font-size:13.5px;margin-bottom:10px}
+  .rfield{width:100%;font:inherit;font-size:16px;border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;background:#fff;color:var(--ink)}
+  .rlabel{display:block;font-size:13px;font-weight:700;margin:12px 0 6px}
+  .filebtn{position:relative;overflow:hidden}
+  .filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+  .rstatus{font-size:13px;padding:8px 12px;border-radius:12px;background:#fde8e0;color:#a2513a;margin-bottom:10px}
+  .rstatus.ok{background:#dff3e6;color:var(--leaf-d)}
+  nav button{padding:6px 2px;flex:1;min-width:0}
+  /* 제목·버튼·메뉴는 둥근 Jua (굵기 하나뿐이라 가짜 굵게 방지) */
+  header h1,.card h2,.btn,nav button,.rlabel,summary{font-family:"Jua","Nunito","Gowun Dodum",sans-serif;font-weight:400}
+  /* 알림 토스트 + 휴대폰 위쪽 시스템 막대 영역 칠하기 */
+  #toast{position:fixed;left:50%;bottom:calc(var(--navh,78px) + 84px);transform:translateX(-50%);max-width:min(92vw,440px);z-index:20;
+    background:#4a4033;color:#fffdf6;padding:10px 16px;border-radius:16px;font-size:14px;line-height:1.5;text-align:center;opacity:0;pointer-events:none;transition:opacity .2s}
+  #toast.show{opacity:1}
+  body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--cream)}
+  /* D-2 직접 만든 장식 (CSS·SVG, 외부 이미지 없음) */
+  body{background-color:var(--cream);
+    background-image:radial-gradient(#efe3c4 1.3px,transparent 1.6px),radial-gradient(#efe3c4 1.3px,transparent 1.6px);
+    background-size:28px 28px;background-position:0 0,14px 14px}
+  header{border-bottom:none}
+  header::after{content:"";position:absolute;left:0;right:0;bottom:-9px;height:10px;pointer-events:none;
+    background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='10'%3E%3Cpath d='M0 0h24v1.5C18 1.5 18 9 12 9S6 1.5 0 1.5Z' fill='%23fbf6e9' stroke='%23ece3cc' stroke-width='1'/%3E%3C/svg%3E") repeat-x;background-size:24px 10px}
+  .card{outline:1.5px dashed #ecdfbf;outline-offset:-6px}
+  .card > p.hint{position:relative;background:#f1f8ec;color:#5f7a62;border-radius:14px;padding:8px 12px;margin:10px 0 12px;line-height:1.5}
+  .card > p.hint::before{content:"";position:absolute;top:-6px;left:18px;border:7px solid transparent;border-top:0;border-bottom:6px solid #f1f8ec}
+  /* D-3 아이콘: 파스텔 동그라미 안의 Phosphor 아이콘 */
+  .icb{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;flex:none}
+  .icb svg{width:19px;height:19px}
+  nav .icb{width:30px;height:26px}
+  nav .icb svg{width:24px;height:24px}
+  /* 8단계 홈 모드 카드 */
+  .modes{display:grid;gap:12px;margin-bottom:14px}
+  .modecard{display:flex;align-items:center;gap:12px;text-align:left;background:var(--bg);border:2px solid #fff;border-radius:24px;padding:14px 16px;cursor:pointer;
+    font-family:inherit;color:var(--ink);box-shadow:0 3px 0 rgba(120,100,60,.12);transition:transform .12s ease}
+  .modecard b{display:block;font-family:"Jua","Nunito",sans-serif;font-weight:400;font-size:18px}
+  .modecard small{font-size:12.5px;color:#7d7160;line-height:1.4}
+  .modecard:active{transform:scale(.97)}
+  /* D-4 홈 타일 */
+  .homehi{font-size:15px}
+  .homestat{font-size:14px;line-height:1.8;margin-top:4px}
+  .tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .tile{background:var(--bg);color:var(--ink);border:2px solid #fff;border-radius:24px;padding:14px;min-height:132px;cursor:pointer;
+    display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;font-family:inherit;box-shadow:0 3px 0 rgba(120,100,60,.12)}
+  .tile b{font-family:"Jua","Nunito",sans-serif;font-weight:400;font-size:17px}
+  .tile small{font-size:12px;color:#7d7160;line-height:1.4}
+  .ticon{width:44px;height:44px;border-radius:15px;background:#fff;color:var(--fg);display:grid;place-items:center}
+  .ticon svg{width:26px;height:26px}
+  .tile:focus-visible{outline:3px solid var(--sky-d);outline-offset:2px}
+  /* D-5 부드러운 움직임 (CSS만). 동작 줄이기 설정이면 전부 끔 */
+  .chip,.btn,.tile,nav button,.vsel,.vfav{transition:transform .12s ease,box-shadow .12s ease,background-color .15s ease}
+  .chip:active,.btn:active:not(:disabled),.tile:active,nav button:active,.vsel:active{transform:scale(.95)}
+  .chip[aria-pressed="true"],.vsel[aria-pressed="true"]{animation:pop .28s ease}
+  @keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.08)}100%{transform:scale(1)}}
+  .screen.active{animation:fadeUp .25s ease}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @media(hover:hover){.tile:hover{transform:translateY(-3px);box-shadow:0 6px 0 rgba(120,100,60,.14)}}
+  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+  @media(max-width:360px){ .badge-long{display:none} header h1{font-size:17px} }
+  @media(min-width:900px){ nav{max-width:520px;margin:0 auto 14px;border:1px solid var(--line);border-radius:22px} .dock{bottom:calc(var(--navh,78px) + 14px)} }
+</style>
+</head>
+<body>
+<!-- D-3 아이콘: Phosphor Icons duotone (MIT License, Copyright (c) 2023 Phosphor Icons) — icons/LICENSE-Phosphor.txt -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="ph-camera" viewBox="0 0 256 256" fill="currentColor"><path d="M208,64H176L160,40H96L80,64H48A16,16,0,0,0,32,80V192a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V80A16,16,0,0,0,208,64ZM128,168a36,36,0,1,1,36-36A36,36,0,0,1,128,168Z" opacity="0.2"/><path d="M208,56H180.28L166.65,35.56A8,8,0,0,0,160,32H96a8,8,0,0,0-6.65,3.56L75.71,56H48A24,24,0,0,0,24,80V192a24,24,0,0,0,24,24H208a24,24,0,0,0,24-24V80A24,24,0,0,0,208,56Zm8,136a8,8,0,0,1-8,8H48a8,8,0,0,1-8-8V80a8,8,0,0,1,8-8H80a8,8,0,0,0,6.66-3.56L100.28,48h55.43l13.63,20.44A8,8,0,0,0,176,72h32a8,8,0,0,1,8,8ZM128,88a44,44,0,1,0,44,44A44.05,44.05,0,0,0,128,88Zm0,72a28,28,0,1,1,28-28A28,28,0,0,1,128,160Z"/></symbol><symbol id="ph-clipboard-text" viewBox="0 0 256 256" fill="currentColor"><path d="M208,48V216a8,8,0,0,1-8,8H56a8,8,0,0,1-8-8V48a8,8,0,0,1,8-8H96a39.83,39.83,0,0,0-8,24v8h80V64a39.83,39.83,0,0,0-8-24h40A8,8,0,0,1,208,48Z" opacity="0.2"/><path d="M168,152a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,152Zm-8-40H96a8,8,0,0,0,0,16h64a8,8,0,0,0,0-16Zm56-64V216a16,16,0,0,1-16,16H56a16,16,0,0,1-16-16V48A16,16,0,0,1,56,32H92.26a47.92,47.92,0,0,1,71.48,0H200A16,16,0,0,1,216,48ZM96,64h64a32,32,0,0,0-64,0ZM200,48H173.25A47.93,47.93,0,0,1,176,64v8a8,8,0,0,1-8,8H88a8,8,0,0,1-8-8V64a47.93,47.93,0,0,1,2.75-16H56V216H200Z"/></symbol><symbol id="ph-clock-counter-clockwise" viewBox="0 0 256 256" fill="currentColor"><path d="M216,128a88,88,0,1,1-88-88A88,88,0,0,1,216,128Z" opacity="0.2"/><path d="M136,80v43.47l36.12,21.67a8,8,0,0,1-8.24,13.72l-40-24A8,8,0,0,1,120,128V80a8,8,0,0,1,16,0Zm-8-48A95.44,95.44,0,0,0,60.08,60.15C52.81,67.51,46.35,74.59,40,82V64a8,8,0,0,0-16,0v40a8,8,0,0,0,8,8H72a8,8,0,0,0,0-16H49c7.15-8.42,14.27-16.35,22.39-24.57a80,80,0,1,1,1.66,114.75,8,8,0,1,0-11,11.64A96,96,0,1,0,128,32Z"/></symbol><symbol id="ph-cloud-sun" viewBox="0 0 256 256" fill="currentColor"><path d="M139.84,84.41v0a68.22,68.22,0,0,0-41.65,46v-.11a44.08,44.08,0,0,0-38.54,5h0a48,48,0,1,1,80.19-50.94Z" opacity="0.2"/><path d="M164,72a76.2,76.2,0,0,0-20.26,2.73,55.63,55.63,0,0,0-9.41-11.54l9.51-13.57a8,8,0,1,0-13.11-9.18L121.22,54A55.9,55.9,0,0,0,96,48c-.58,0-1.16,0-1.74,0L91.37,31.71a8,8,0,1,0-15.75,2.77L78.5,50.82A56.1,56.1,0,0,0,55.23,65.67L41.61,56.14a8,8,0,1,0-9.17,13.11L46,78.77A55.55,55.55,0,0,0,40,104c0,.57,0,1.15,0,1.72L23.71,108.6a8,8,0,0,0,1.38,15.88,8.24,8.24,0,0,0,1.39-.12l16.32-2.88a55.74,55.74,0,0,0,5.86,12.42A52,52,0,0,0,84,224h80a76,76,0,0,0,0-152ZM56,104a40,40,0,0,1,72.54-23.24,76.26,76.26,0,0,0-35.62,40,52.14,52.14,0,0,0-31,4.17A40,40,0,0,1,56,104ZM164,208H84a36,36,0,1,1,4.78-71.69c-.37,2.37-.63,4.79-.77,7.23a8,8,0,0,0,16,.92,58.91,58.91,0,0,1,1.88-11.81c0-.16.09-.32.12-.48A60.06,60.06,0,1,1,164,208Z"/></symbol><symbol id="ph-device-mobile" viewBox="0 0 256 256" fill="currentColor"><path d="M192,56V200H64V56Z" opacity="0.2"/><path d="M176,16H80A24,24,0,0,0,56,40V216a24,24,0,0,0,24,24h96a24,24,0,0,0,24-24V40A24,24,0,0,0,176,16ZM72,64H184V192H72Zm8-32h96a8,8,0,0,1,8,8v8H72V40A8,8,0,0,1,80,32Zm96,192H80a8,8,0,0,1-8-8v-8H184v8A8,8,0,0,1,176,224Z"/></symbol><symbol id="ph-flower-tulip" viewBox="0 0 256 256" fill="currentColor"><path d="M169.23,66v0A80,80,0,0,0,128,136,80,80,0,0,0,86.77,66v0C100,38,128,24,128,24S156,38,169.23,66Z" opacity="0.2"/><path d="M208,48a87.48,87.48,0,0,0-35.36,7.43c-15.1-25.37-39.92-38-41.06-38.59a8,8,0,0,0-7.16,0c-1.14.58-26,13.22-41.06,38.59A87.48,87.48,0,0,0,48,48a8,8,0,0,0-8,8V96a88.11,88.11,0,0,0,80,87.63v35.43L83.58,200.84a8,8,0,1,0-7.16,14.32l48,24a8,8,0,0,0,7.16,0l48-24a8,8,0,0,0-7.16-14.32L136,219.06V183.63A88.11,88.11,0,0,0,216,96V56A8,8,0,0,0,208,48ZM128,33.21c6.65,4.08,21.08,14.19,30.64,30A88.46,88.46,0,0,0,128,99.36,88.4,88.4,0,0,0,97.36,63.19C106.93,47.4,121.35,37.29,128,33.21ZM56,96V64.44A72.1,72.1,0,0,1,120,136v31.56A72.1,72.1,0,0,1,56,96Zm144,0a72.1,72.1,0,0,1-64,71.56V136a72.1,72.1,0,0,1,64-71.56Z"/></symbol><symbol id="ph-hand-heart" viewBox="0 0 256 256" fill="currentColor"><path d="M16,152H48v56H16a8,8,0,0,1-8-8V160A8,8,0,0,1,16,152ZM192.54,40A39.12,39.12,0,0,0,156,64a39.12,39.12,0,0,0-36.54-24C97.67,40,80,58.31,80,80c0,14.56,7,27.71,16.73,40H140a20,20,0,0,1,0,40h4l37.78-8.68C203.82,135.07,232,109.23,232,80,232,58.31,214.33,40,192.54,40Z" opacity="0.2"/><path d="M230.33,141.06a24.34,24.34,0,0,0-18.61-4.77C230.5,117.33,240,98.48,240,80c0-26.47-21.29-48-47.46-48A47.58,47.58,0,0,0,156,48.75,47.58,47.58,0,0,0,119.46,32C93.29,32,72,53.53,72,80c0,11,3.24,21.69,10.06,33a31.87,31.87,0,0,0-14.75,8.4L44.69,144H16A16,16,0,0,0,0,160v40a16,16,0,0,0,16,16H120a7.93,7.93,0,0,0,1.94-.24l64-16a6.94,6.94,0,0,0,1.19-.4L226,182.82l.44-.2a24.6,24.6,0,0,0,3.93-41.56ZM119.46,48A31.15,31.15,0,0,1,148.6,67a8,8,0,0,0,14.8,0,31.15,31.15,0,0,1,29.14-19C209.59,48,224,62.65,224,80c0,19.51-15.79,41.58-45.66,63.9l-11.09,2.55A28,28,0,0,0,140,112H100.68C92.05,100.36,88,90.12,88,80,88,62.65,102.41,48,119.46,48ZM16,160H40v40H16Zm203.43,8.21-38,16.18L119,200H56V155.31l22.63-22.62A15.86,15.86,0,0,1,89.94,128H140a12,12,0,0,1,0,24H112a8,8,0,0,0,0,16h32a8.32,8.32,0,0,0,1.79-.2l67-15.41.31-.08a8.6,8.6,0,0,1,6.3,15.9Z"/></symbol><symbol id="ph-house" viewBox="0 0 256 256" fill="currentColor"><path d="M216,120v96H152V152H104v64H40V120a8,8,0,0,1,2.34-5.66l80-80a8,8,0,0,1,11.32,0l80,80A8,8,0,0,1,216,120Z" opacity="0.2"/><path d="M219.31,108.68l-80-80a16,16,0,0,0-22.62,0l-80,80A15.87,15.87,0,0,0,32,120v96a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V160h32v56a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V120A15.87,15.87,0,0,0,219.31,108.68ZM208,208H160V152a8,8,0,0,0-8-8H104a8,8,0,0,0-8,8v56H48V120l80-80,80,80Z"/></symbol><symbol id="ph-game-controller" viewBox="0 0 256 256" fill="currentColor"><path d="M216.86,207.57a28,28,0,0,1-24.66-7.77L150.09,152H172a51.94,51.94,0,0,0,51.2-61h0l16.36,84.17A28,28,0,0,1,216.86,207.57Z" opacity="0.2"/><path d="M176,112H152a8,8,0,0,1,0-16h24a8,8,0,0,1,0,16ZM104,96H96V88a8,8,0,0,0-16,0v8H72a8,8,0,0,0,0,16h8v8a8,8,0,0,0,16,0v-8h8a8,8,0,0,0,0-16ZM241.48,200.65a36,36,0,0,1-54.94,4.81c-.12-.12-.24-.24-.35-.37L146.48,160h-37L69.81,205.09l-.35.37A36.08,36.08,0,0,1,44,216,36,36,0,0,1,8.56,173.75a.68.68,0,0,1,0-.14L24.93,89.52A59.88,59.88,0,0,1,83.89,40H172a60.08,60.08,0,0,1,59,49.25c0,.06,0,.12,0,.18l16.37,84.17a.68.68,0,0,1,0,.14A35.74,35.74,0,0,1,241.48,200.65ZM172,144a44,44,0,0,0,0-88H83.89A43.9,43.9,0,0,0,40.68,92.37l0,.13L24.3,176.59A20,20,0,0,0,58,194.3l41.92-47.59a8,8,0,0,1,6-2.71Zm59.7,32.59-8.74-45A60,60,0,0,1,172,160h-4.2L198,194.31a20.09,20.09,0,0,0,17.46,5.39,20,20,0,0,0,16.23-23.11Z"/></symbol><symbol id="ph-sparkle" viewBox="0 0 256 256" fill="currentColor"><path d="M194.82,151.43l-55.09,20.3-20.3,55.09a7.92,7.92,0,0,1-14.86,0l-20.3-55.09-55.09-20.3a7.92,7.92,0,0,1,0-14.86l55.09-20.3,20.3-55.09a7.92,7.92,0,0,1,14.86,0l20.3,55.09,55.09,20.3A7.92,7.92,0,0,1,194.82,151.43Z" opacity="0.2"/><path d="M197.58,129.06,146,110l-19-51.62a15.92,15.92,0,0,0-29.88,0L78,110l-51.62,19a15.92,15.92,0,0,0,0,29.88L78,178l19,51.62a15.92,15.92,0,0,0,29.88,0L146,178l51.62-19a15.92,15.92,0,0,0,0-29.88ZM137,164.22a8,8,0,0,0-4.74,4.74L112,223.85,91.78,169A8,8,0,0,0,87,164.22L32.15,144,87,123.78A8,8,0,0,0,91.78,119L112,64.15,132.22,119a8,8,0,0,0,4.74,4.74L191.85,144ZM144,40a8,8,0,0,1,8-8h16V16a8,8,0,0,1,16,0V32h16a8,8,0,0,1,0,16H184V64a8,8,0,0,1-16,0V48H152A8,8,0,0,1,144,40ZM248,88a8,8,0,0,1-8,8h-8v8a8,8,0,0,1-16,0V96h-8a8,8,0,0,1,0-16h8V72a8,8,0,0,1,16,0v8h8A8,8,0,0,1,248,88Z"/></symbol><symbol id="ph-image" viewBox="0 0 256 256" fill="currentColor"><path d="M224,56V178.06l-39.72-39.72a8,8,0,0,0-11.31,0L147.31,164,97.66,114.34a8,8,0,0,0-11.32,0L32,168.69V56a8,8,0,0,1,8-8H216A8,8,0,0,1,224,56Z" opacity="0.2"/><path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm0,16V158.75l-26.07-26.06a16,16,0,0,0-22.63,0l-20,20-44-44a16,16,0,0,0-22.62,0L40,149.37V56ZM40,172l52-52,80,80H40Zm176,28H194.63l-36-36,20-20L216,181.38V200ZM144,100a12,12,0,1,1,12,12A12,12,0,0,1,144,100Z"/></symbol><symbol id="ph-island" viewBox="0 0 256 256" fill="currentColor"><path d="M32,140a20,20,0,1,1,20,20A20,20,0,0,1,32,140Zm96,52c-64,0-104,32-104,32H232S192,192,128,192Z" opacity="0.2"/><path d="M238.25,229A8,8,0,0,1,227,230.25c-.37-.3-38.82-30.25-99-30.25S29.36,230,29,230.26a8,8,0,0,1-10-12.51c1.63-1.3,38.52-30.26,98.29-33.45A119.94,119.94,0,0,1,114,146.37c1.74-21.71,10.92-50.63,43-72.48a66.19,66.19,0,0,0-15-1.87l-1.67,0c-19,.62-30.94,11.71-36.5,33.92A8,8,0,0,1,96,112a7.64,7.64,0,0,1-1.94-.24,8,8,0,0,1-5.82-9.7c9.25-36.95,33.11-45.42,51.5-46a81.48,81.48,0,0,1,21.68,2.45c-3.83-6.33-9.43-12.93-17.21-16.25-10-4.24-22.17-2.39-36.31,5.51a8,8,0,0,1-7.8-14c18.74-10.45,35.72-12.54,50.48-6.2,12.49,5.36,20.73,15.78,25.87,25,6.18-9.64,13.88-16.17,22.39-18.94,11.86-3.87,24.64-.72,38,9.37a8,8,0,0,1-9.64,12.76c-8.91-6.73-16.77-9.06-23.35-6.93-7.29,2.35-12.87,10-16.37,16.61A70.46,70.46,0,0,1,208,73.07c14.61,8.35,32,26.05,32,62.94a8,8,0,0,1-16,0c0-23.46-8.07-40-24-49a50.49,50.49,0,0,0-5.75-2.8,55.64,55.64,0,0,1,5.06,33.06,59.41,59.41,0,0,1-8.86,23.41,8,8,0,0,1-13.09-9.2c.74-1.09,16.33-24.38-3.26-49.37-27,15.21-41.89,37.25-44.16,65.59a104.27,104.27,0,0,0,3.83,36.44c62.65,1.81,101.52,32.33,103.2,33.66A8,8,0,0,1,238.25,229ZM24,140a28,28,0,1,1,28,28A28,28,0,0,1,24,140Zm16,0a12,12,0,1,0,12-12A12,12,0,0,0,40,140Z"/></symbol><symbol id="ph-magnifying-glass" viewBox="0 0 256 256" fill="currentColor"><path d="M192,112a80,80,0,1,1-80-80A80,80,0,0,1,192,112Z" opacity="0.2"/><path d="M229.66,218.34,179.6,168.28a88.21,88.21,0,1,0-11.32,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/></symbol><symbol id="ph-map-pin" viewBox="0 0 256 256" fill="currentColor"><path d="M128,24a80,80,0,0,0-80,80c0,72,80,128,80,128s80-56,80-128A80,80,0,0,0,128,24Zm0,112a32,32,0,1,1,32-32A32,32,0,0,1,128,136Z" opacity="0.2"/><path d="M128,64a40,40,0,1,0,40,40A40,40,0,0,0,128,64Zm0,64a24,24,0,1,1,24-24A24,24,0,0,1,128,128Zm0-112a88.1,88.1,0,0,0-88,88c0,31.4,14.51,64.68,42,96.25a254.19,254.19,0,0,0,41.45,38.3,8,8,0,0,0,9.18,0A254.19,254.19,0,0,0,174,200.25c27.45-31.57,42-64.85,42-96.25A88.1,88.1,0,0,0,128,16Zm0,206c-16.53-13-72-60.75-72-118a72,72,0,0,1,144,0C200,161.23,144.53,209,128,222Z"/></symbol><symbol id="ph-paw-print" viewBox="0 0 256 256" fill="currentColor"><path d="M232,108a20,20,0,1,1-20-20A20,20,0,0,1,232,108ZM64,108a20,20,0,1,0-20,20A20,20,0,0,0,64,108ZM92,80A20,20,0,1,0,72,60,20,20,0,0,0,92,80Zm72,0a20,20,0,1,0-20-20A20,20,0,0,0,164,80Zm19.24,75.85A43.46,43.46,0,0,1,162.57,130a36,36,0,0,0-69.14,0,43.49,43.49,0,0,1-20.67,25.9,32,32,0,0,0,27.73,57.62,72.49,72.49,0,0,1,55,0,32,32,0,0,0,27.73-57.62Z" opacity="0.2"/><path d="M212,80a28,28,0,1,0,28,28A28,28,0,0,0,212,80Zm0,40a12,12,0,1,1,12-12A12,12,0,0,1,212,120ZM72,108a28,28,0,1,0-28,28A28,28,0,0,0,72,108ZM44,120a12,12,0,1,1,12-12A12,12,0,0,1,44,120ZM92,88A28,28,0,1,0,64,60,28,28,0,0,0,92,88Zm0-40A12,12,0,1,1,80,60,12,12,0,0,1,92,48Zm72,40a28,28,0,1,0-28-28A28,28,0,0,0,164,88Zm0-40a12,12,0,1,1-12,12A12,12,0,0,1,164,48Zm23.12,100.86a35.3,35.3,0,0,1-16.87-21.14,44,44,0,0,0-84.5,0A35.25,35.25,0,0,1,69,148.82,40,40,0,0,0,88,224a39.48,39.48,0,0,0,15.52-3.13,64.09,64.09,0,0,1,48.87,0,40,40,0,0,0,34.73-72ZM168,208a24,24,0,0,1-9.45-1.93,80.14,80.14,0,0,0-61.19,0,24,24,0,0,1-20.71-43.26,51.22,51.22,0,0,0,24.46-30.67,28,28,0,0,1,53.78,0,51.27,51.27,0,0,0,24.53,30.71A24,24,0,0,1,168,208Z"/></symbol><symbol id="ph-person" viewBox="0 0 256 256" fill="currentColor"><path d="M104,40a24,24,0,1,1,24,24A24,24,0,0,1,104,40Zm108.49,99.51L167.17,88.13a24,24,0,0,0-18-8.13H106.83a24,24,0,0,0-18,8.13L43.51,139.51a12,12,0,0,0,17,17L96,128,73.13,214.93a12,12,0,0,0,21.75,10.14L128,168l33.12,57.07a12,12,0,0,0,21.75-10.14L160,128l35.51,28.49a12,12,0,0,0,17-17Z" opacity="0.2"/><path d="M160,40a32,32,0,1,0-32,32A32,32,0,0,0,160,40ZM128,56a16,16,0,1,1,16-16A16,16,0,0,1,128,56Zm90.34,78.05L173.17,82.83a32,32,0,0,0-24-10.83H106.83a32,32,0,0,0-24,10.83L37.66,134.05a20,20,0,0,0,28.13,28.43l16.3-13.08L65.55,212.28A20,20,0,0,0,102,228.8l26-44.87,26,44.87a20,20,0,0,0,36.41-16.52L173.91,149.4l16.3,13.08a20,20,0,0,0,28.13-28.43Zm-11.51,16.77a4,4,0,0,1-5.66,0c-.21-.2-.42-.4-.65-.58L165,121.76A8,8,0,0,0,152.26,130L175.14,217a7.72,7.72,0,0,0,.48,1.35,4,4,0,1,1-7.25,3.38,6.25,6.25,0,0,0-.33-.63L134.92,164a8,8,0,0,0-13.84,0L88,221.05a6.25,6.25,0,0,0-.33.63,4,4,0,0,1-2.26,2.07,4,4,0,0,1-5-5.45,7.72,7.72,0,0,0,.48-1.35L103.74,130A8,8,0,0,0,91,121.76L55.48,150.24c-.23.18-.44.38-.65.58a4,4,0,1,1-5.66-5.65c.12-.12.23-.24.34-.37L94.83,93.41a16,16,0,0,1,12-5.41h42.34a16,16,0,0,1,12,5.41l45.32,51.39c.11.13.22.25.34.37A4,4,0,0,1,206.83,150.82Z"/></symbol><symbol id="ph-ruler" viewBox="0 0 256 256" fill="currentColor"><path d="M229.66,90.34,90.34,229.66a8,8,0,0,1-11.31,0L26.34,177a8,8,0,0,1,0-11.31L165.66,26.34a8,8,0,0,1,11.31,0L229.66,79A8,8,0,0,1,229.66,90.34Z" opacity="0.2"/><path d="M235.32,73.37,182.63,20.69a16,16,0,0,0-22.63,0L20.68,160a16,16,0,0,0,0,22.63l52.69,52.68a16,16,0,0,0,22.63,0L235.32,96A16,16,0,0,0,235.32,73.37ZM84.68,224,32,171.31l32-32,26.34,26.35a8,8,0,0,0,11.32-11.32L75.31,128,96,107.31l26.34,26.35a8,8,0,0,0,11.32-11.32L107.31,96,128,75.31l26.34,26.35a8,8,0,0,0,11.32-11.32L139.31,64l32-32L224,84.69Z"/></symbol><symbol id="ph-seal-check" viewBox="0 0 256 256" fill="currentColor"><path d="M232,128c0,12.51-17.82,21.95-22.68,33.69-4.68,11.32,1.42,30.65-7.78,39.85s-28.53,3.1-39.85,7.78C150,214.18,140.5,232,128,232s-22-17.82-33.69-22.68c-11.32-4.68-30.65,1.42-39.85-7.78s-3.1-28.53-7.78-39.85C41.82,150,24,140.5,24,128s17.82-22,22.68-33.69C51.36,83,45.26,63.66,54.46,54.46S83,51.36,94.31,46.68C106.05,41.82,115.5,24,128,24S150,41.82,161.69,46.68c11.32,4.68,30.65-1.42,39.85,7.78s3.1,28.53,7.78,39.85C214.18,106.05,232,115.5,232,128Z" opacity="0.2"/><path d="M225.86,102.82c-3.77-3.94-7.67-8-9.14-11.57-1.36-3.27-1.44-8.69-1.52-13.94-.15-9.76-.31-20.82-8-28.51s-18.75-7.85-28.51-8c-5.25-.08-10.67-.16-13.94-1.52-3.56-1.47-7.63-5.37-11.57-9.14C146.28,23.51,138.44,16,128,16s-18.27,7.51-25.18,14.14c-3.94,3.77-8,7.67-11.57,9.14C88,40.64,82.56,40.72,77.31,40.8c-9.76.15-20.82.31-28.51,8S41,67.55,40.8,77.31c-.08,5.25-.16,10.67-1.52,13.94-1.47,3.56-5.37,7.63-9.14,11.57C23.51,109.72,16,117.56,16,128s7.51,18.27,14.14,25.18c3.77,3.94,7.67,8,9.14,11.57,1.36,3.27,1.44,8.69,1.52,13.94.15,9.76.31,20.82,8,28.51s18.75,7.85,28.51,8c5.25.08,10.67.16,13.94,1.52,3.56,1.47,7.63,5.37,11.57,9.14C109.72,232.49,117.56,240,128,240s18.27-7.51,25.18-14.14c3.94-3.77,8-7.67,11.57-9.14,3.27-1.36,8.69-1.44,13.94-1.52,9.76-.15,20.82-.31,28.51-8s7.85-18.75,8-28.51c.08-5.25.16-10.67,1.52-13.94,1.47-3.56,5.37-7.63,9.14-11.57C232.49,146.28,240,138.44,240,128S232.49,109.73,225.86,102.82Zm-11.55,39.29c-4.79,5-9.75,10.17-12.38,16.52-2.52,6.1-2.63,13.07-2.73,19.82-.1,7-.21,14.33-3.32,17.43s-10.39,3.22-17.43,3.32c-6.75.1-13.72.21-19.82,2.73-6.35,2.63-11.52,7.59-16.52,12.38S132,224,128,224s-9.15-4.92-14.11-9.69-10.17-9.75-16.52-12.38c-6.1-2.52-13.07-2.63-19.82-2.73-7-.1-14.33-.21-17.43-3.32s-3.22-10.39-3.32-17.43c-.1-6.75-.21-13.72-2.73-19.82-2.63-6.35-7.59-11.52-12.38-16.52S32,132,32,128s4.92-9.15,9.69-14.11,9.75-10.17,12.38-16.52c2.52-6.1,2.63-13.07,2.73-19.82.1-7,.21-14.33,3.32-17.43S70.51,56.9,77.55,56.8c6.75-.1,13.72-.21,19.82-2.73,6.35-2.63,11.52-7.59,16.52-12.38S124,32,128,32s9.15,4.92,14.11,9.69,10.17,9.75,16.52,12.38c6.1,2.52,13.07,2.63,19.82,2.73,7,.1,14.33.21,17.43,3.32s3.22,10.39,3.32,17.43c.1,6.75.21,13.72,2.73,19.82,2.63,6.35,7.59,11.52,12.38,16.52S224,124,224,128,219.08,137.15,214.31,142.11ZM173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34Z"/></symbol><symbol id="ph-smiley" viewBox="0 0 256 256" fill="currentColor"><path d="M224,128a96,96,0,1,1-96-96A96,96,0,0,1,224,128Z" opacity="0.2"/><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216ZM80,108a12,12,0,1,1,12,12A12,12,0,0,1,80,108Zm96,0a12,12,0,1,1-12-12A12,12,0,0,1,176,108Zm-1.08,48c-10.29,17.79-27.39,28-46.92,28s-36.63-10.2-46.92-28a8,8,0,1,1,13.84-8c7.47,12.91,19.21,20,33.08,20s25.61-7.1,33.08-20a8,8,0,1,1,13.84,8Z"/></symbol><symbol id="ph-star" viewBox="0 0 256 256" fill="currentColor"><path d="M229.06,108.79l-48.7,42,14.88,62.79a8.4,8.4,0,0,1-12.52,9.17L128,189.09,73.28,222.74a8.4,8.4,0,0,1-12.52-9.17l14.88-62.79-48.7-42A8.46,8.46,0,0,1,31.73,94L95.64,88.8l24.62-59.6a8.36,8.36,0,0,1,15.48,0l24.62,59.6L224.27,94A8.46,8.46,0,0,1,229.06,108.79Z" opacity="0.2"/><path d="M239.18,97.26A16.38,16.38,0,0,0,224.92,86l-59-4.76L143.14,26.15a16.36,16.36,0,0,0-30.27,0L90.11,81.23,31.08,86a16.46,16.46,0,0,0-9.37,28.86l45,38.83L53,211.75a16.38,16.38,0,0,0,24.5,17.82L128,198.49l50.53,31.08A16.4,16.4,0,0,0,203,211.75l-13.76-58.07,45-38.83A16.43,16.43,0,0,0,239.18,97.26Zm-15.34,5.47-48.7,42a8,8,0,0,0-2.56,7.91l14.88,62.8a.37.37,0,0,1-.17.48c-.18.14-.23.11-.38,0l-54.72-33.65a8,8,0,0,0-8.38,0L69.09,215.94c-.15.09-.19.12-.38,0a.37.37,0,0,1-.17-.48l14.88-62.8a8,8,0,0,0-2.56-7.91l-48.7-42c-.12-.1-.23-.19-.13-.5s.18-.27.33-.29l63.92-5.16A8,8,0,0,0,103,91.86l24.62-59.61c.08-.17.11-.25.35-.25s.27.08.35.25L153,91.86a8,8,0,0,0,6.75,4.92l63.92,5.16c.15,0,.24,0,.33.29S224,102.63,223.84,102.73Z"/></symbol><symbol id="ph-sun-horizon" viewBox="0 0 256 256" fill="currentColor"><path d="M192,144a64.33,64.33,0,0,1-2,16H66a64,64,0,1,1,126-16Z" opacity="0.2"/><path d="M240,152H199.55a73.54,73.54,0,0,0,.45-8,72,72,0,0,0-144,0,73.54,73.54,0,0,0,.45,8H16a8,8,0,0,0,0,16H240a8,8,0,0,0,0-16ZM72,144a56,56,0,1,1,111.41,8H72.59A56.13,56.13,0,0,1,72,144Zm144,56a8,8,0,0,1-8,8H48a8,8,0,0,1,0-16H208A8,8,0,0,1,216,200ZM72.84,43.58a8,8,0,0,1,14.32-7.16l8,16a8,8,0,0,1-14.32,7.16Zm-56,48.84a8,8,0,0,1,10.74-3.57l16,8a8,8,0,0,1-7.16,14.31l-16-8A8,8,0,0,1,16.84,92.42Zm192,15.16a8,8,0,0,1,3.58-10.73l16-8a8,8,0,1,1,7.16,14.31l-16,8a8,8,0,0,1-10.74-3.58Zm-48-55.16,8-16a8,8,0,0,1,14.32,7.16l-8,16a8,8,0,1,1-14.32-7.16Z"/></symbol><symbol id="ph-tree-palm" viewBox="0 0 256 256" fill="currentColor"><path d="M232,58.75,128,104a65.47,65.47,0,0,1,17.84-45.25,58.87,58.87,0,0,1,86.16,0ZM176.56,98.18A64.2,64.2,0,0,0,128,104.52L221.81,176a63,63,0,0,0-6.39-48.22A63.73,63.73,0,0,0,176.56,98.18Zm-66.4-39.43a58.87,58.87,0,0,0-86.16,0L128,104A65.47,65.47,0,0,0,110.16,58.75ZM79.44,98.18a63.73,63.73,0,0,0-38.86,29.6A63,63,0,0,0,34.19,176L128,104.52A64.2,64.2,0,0,0,79.44,98.18Z" opacity="0.2"/><path d="M237.79,53.23a66.86,66.86,0,0,0-97.74,0,72.21,72.21,0,0,0-12.05,17,72.21,72.21,0,0,0-12-17,66.86,66.86,0,0,0-97.74,0,8,8,0,0,0,2.6,12.85L77,90.55a71.42,71.42,0,0,0-43.36,33.21,70.64,70.64,0,0,0-7.2,54.32A8,8,0,0,0,39,182.36l81-61.68V224a8,8,0,0,0,16,0V120.68l81,61.68a8,8,0,0,0,12.57-4.28,70.64,70.64,0,0,0-7.2-54.32A71.42,71.42,0,0,0,179,90.55l56.22-24.47a8,8,0,0,0,2.6-12.85ZM67.08,48a51.13,51.13,0,0,1,37.28,16.26,56.53,56.53,0,0,1,14.26,26.93L39,56.53A50.5,50.5,0,0,1,67.08,48ZM40,161.5a54.82,54.82,0,0,1,7.47-29.7,55.55,55.55,0,0,1,34-25.89A56.52,56.52,0,0,1,96.1,104a55.82,55.82,0,0,1,16.23,2.41ZM208.5,131.8A54.82,54.82,0,0,1,216,161.5l-72.3-55.1a56.3,56.3,0,0,1,64.83,25.4ZM137.38,91.19a56.53,56.53,0,0,1,14.26-26.93A51.13,51.13,0,0,1,188.92,48,50.5,50.5,0,0,1,217,56.53Z"/></symbol><symbol id="ph-user-circle" viewBox="0 0 256 256" fill="currentColor"><path d="M224,128a95.76,95.76,0,0,1-31.8,71.37A72,72,0,0,0,128,160a40,40,0,1,0-40-40,40,40,0,0,0,40,40,72,72,0,0,0-64.2,39.37h0A96,96,0,1,1,224,128Z" opacity="0.2"/><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24ZM74.08,197.5a64,64,0,0,1,107.84,0,87.83,87.83,0,0,1-107.84,0ZM96,120a32,32,0,1,1,32,32A32,32,0,0,1,96,120Zm97.76,66.41a79.66,79.66,0,0,0-36.06-28.75,48,48,0,1,0-59.4,0,79.66,79.66,0,0,0-36.06,28.75,88,88,0,1,1,131.52,0Z"/></symbol><symbol id="ph-users-three" viewBox="0 0 256 256" fill="currentColor"><path d="M168,144a40,40,0,1,1-40-40A40,40,0,0,1,168,144ZM64,56A32,32,0,1,0,96,88,32,32,0,0,0,64,56Zm128,0a32,32,0,1,0,32,32A32,32,0,0,0,192,56Z" opacity="0.2"/><path d="M244.8,150.4a8,8,0,0,1-11.2-1.6A51.6,51.6,0,0,0,192,128a8,8,0,0,1,0-16,24,24,0,1,0-23.24-30,8,8,0,1,1-15.5-4A40,40,0,1,1,219,117.51a67.94,67.94,0,0,1,27.43,21.68A8,8,0,0,1,244.8,150.4ZM190.92,212a8,8,0,1,1-13.85,8,57,57,0,0,0-98.15,0,8,8,0,1,1-13.84-8,72.06,72.06,0,0,1,33.74-29.92,48,48,0,1,1,58.36,0A72.06,72.06,0,0,1,190.92,212ZM128,176a32,32,0,1,0-32-32A32,32,0,0,0,128,176ZM72,120a8,8,0,0,0-8-8A24,24,0,1,1,87.24,82a8,8,0,1,0,15.5-4A40,40,0,1,0,37,117.51,67.94,67.94,0,0,0,9.6,139.19a8,8,0,1,0,12.8,9.61A51.6,51.6,0,0,1,64,128,8,8,0,0,0,72,120Z"/></symbol></svg>
+<header>
+  <div class="leafmark" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M5 19C5 10.5 11 5 20 5c0 9-6 15-14.5 14.5Z" fill="#fff"/><path d="M6.5 17.5 15 9" stroke="#4f9e73" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg></div>
+  <h1>섬 풍경 스튜디오</h1>
+  <span class="api on" id="apiBadge" title="이미지는 Claude 대화창에서 Canva로 생성">🎨 <span class="badge-long">생성: 대화창 </span>Canva</span>
+</header>
+
+<main>
+  <!-- 홈 (D-4): 직접 만든 앱 타일. 게임 휴대폰 화면을 따라 하지 않고 넓은 카드 + 아이콘 상자 -->
+  <section class="screen active" id="s-home" aria-label="홈">
+    <div class="card">
+      <p class="hint homehi">안녕하세요! 오늘은 어떤 섬 풍경을 만들어 볼까요? 🍃</p>
+      <div class="homestat" id="homeStat"></div>
+    </div>
+    <div class="modes">
+      <button class="modecard" data-mode="실제 게임 풍경" style="--bg:#e3f3e8;--fg:#4f9e73"><span class="ticon"><svg><use href="#ph-game-controller"/></svg></span>
+        <span><b>실제 게임 풍경 만들기</b><small>실제 모동숲에서 만날 수 있는 자연스러운 풍경을 생성합니다.</small></span></button>
+      <button class="modecard" data-mode="상상 속 동숲" style="--bg:#efe7f8;--fg:#8a6bb8"><span class="ticon"><svg><use href="#ph-sparkle"/></svg></span>
+        <span><b>상상 속 동숲 만들기</b><small>게임에서는 할 수 없었던 여러분의 상상을 배경화면으로 만들어보세요.</small></span></button>
+    </div>
+    <div class="tiles">
+      <button class="tile" data-go="s-make" style="--bg:#e3f3e8;--fg:#4f9e73"><span class="ticon"><svg><use href="#ph-tree-palm"/></svg></span><b>풍경 만들기</b><small>장소·시간·날씨·인물을 골라 프롬프트 복사</small></button>
+      <button class="tile" data-go="s-villagers" style="--bg:#fde9df;--fg:#c8714f"><span class="ticon"><svg><use href="#ph-paw-print"/></svg></span><b>주민</b><small>413명 중 함께할 주민 고르기</small></button>
+      <button class="tile" data-go="s-rep" style="--bg:#efe7f8;--fg:#8a6bb8"><span class="ticon"><svg><use href="#ph-user-circle"/></svg></span><b>주민대표</b><small>사진 올리고 캐릭터 승인</small></button>
+      <button class="tile" data-go="s-result" style="--bg:#e3f1fa;--fg:#3d8bb3"><span class="ticon"><svg><use href="#ph-image"/></svg></span><b>결과</b><small>마지막 프롬프트·다시 생성</small></button>
+      <button class="tile" data-go="s-history" style="--bg:#fbf1d2;--fg:#a8822a"><span class="ticon"><svg><use href="#ph-clock-counter-clockwise"/></svg></span><b>기록</b><small>예전 설정 불러오기</small></button>
+      <button class="tile" data-go="s-fav" style="--bg:#fde4ec;--fg:#c0587e"><span class="ticon"><svg><use href="#ph-star"/></svg></span><b>즐겨찾기</b><small>아끼는 설정·스타일 규칙</small></button>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <details>
+        <summary style="cursor:pointer;font-size:15px;min-height:44px;display:flex;align-items:center">ℹ️ 앱 정보·출처</summary>
+        <div class="vsrc"><b>📄 주민 정보</b> (이름·종족·성격·생일·취미)<br>
+          <a href="https://github.com/Norviah/animal-crossing" target="_blank" rel="noopener">Norviah/animal-crossing</a> — MIT License, Copyright (c) 2020 Norviah<br>
+          원본 자료: <a href="https://docs.google.com/spreadsheets/d/1mo7myqHry5r_TKvakvIhHbcEAEQpSiNoNQoIS8sMpvM/edit#gid=1397507627" target="_blank" rel="noopener">Animal Crossing: New Horizons spreadsheet</a>,
+          <a href="https://docs.google.com/spreadsheets/d/1MMbsvDfu59OY9YBEAfHhFJ6O8vRTllNFgMrX7RBZuyI/edit#gid=1859660274" target="_blank" rel="noopener">Translations spreadsheet</a></div>
+        <div class="vsrc"><b>🖼️ 주민 이미지</b><br>acnhcdn.com에서 화면 표시용으로만 불러와요. 앱에 저장하지 않아요. 저작권은 Nintendo에 있어요. (주민 정보의 MIT 라이선스는 이미지에 적용되지 않아요)</div>
+        <div class="vsrc"><b>🎨 아이콘</b><br><a href="https://phosphoricons.com" target="_blank" rel="noopener">Phosphor Icons</a> — MIT License, Copyright (c) 2023 Phosphor Icons (<code>icons/LICENSE-Phosphor.txt</code>)</div>
+        <div class="vsrc"><b>🔤 글꼴</b><br>Jua · Gowun Dodum · Nunito — SIL Open Font License 1.1 (<code>fonts/OFL-*.txt</code>)</div>
+        <div class="vsrc"><b>🍃 장식</b><br>잎사귀·물결 테두리·말풍선·물방울 무늬는 이 앱에서 직접 만든 CSS·SVG예요.</div>
+        <div class="vsrc"><b>🖌️ 이미지 생성</b><br>이 앱은 프롬프트만 만들어요. 이미지는 Claude 대화창에서 본인 Canva 계정으로 만들어요.</div>
+        <div class="vsrc"><b>🔒 사진</b><br>주민대표 사진은 이 브라우저 안에만 저장되고, 생성할 때만 본인 Canva 계정(비공개)에 올라가요.</div>
+        <p class="hint" style="margin-top:10px">Animal Crossing은 Nintendo의 상표입니다. 이 앱은 Nintendo와 관계없는 비공식 개인 팬 도구예요.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- 만들기 -->
+  <section class="screen" id="s-make" aria-label="배경화면 만들기">
+    <div class="card">
+      <h2>👥 등장 인물</h2>
+      <p class="hint">주민은 🐾 주민 화면에서, 주민대표는 👤 대표 화면에서 정해요. 아무도 없으면 풍경만 만들어요.</p>
+      <div class="summary" id="castInfo"></div>
+    </div>
+    <div id="options"></div>
+
+    <div class="card">
+      <h2>📋 선택한 설정</h2>
+      <div class="summary" id="summary"></div>
+      <details style="margin-top:12px">
+        <summary style="cursor:pointer;font-size:13.5px;color:var(--sub);padding:6px 0">✉️ 생성용 프롬프트 보기</summary>
+        <p class="hint" style="margin-top:6px">이 앱은 이미지를 직접 만들지 않아요. 복사한 글을 Claude 대화창에 붙여넣으면 Canva로 이미지를 만들어 드려요.</p>
+        <textarea id="promptOut" readonly rows="9" aria-label="생성용 프롬프트"
+          style="width:100%;border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;font-size:16px;font-family:ui-monospace,monospace;background:#fff;color:var(--ink);resize:vertical"></textarea>
+      </details>
+    </div>
+    <!-- 화면 아래에 붙어 다니는 버튼 (휴대폰에서 끝까지 스크롤 안 해도 됨) -->
+    <div class="actions dock">
+      <button class="btn alt" id="btnRandom">🎲 랜덤 조합<span class="soon">어울리는 것끼리</span></button>
+      <button class="btn" id="btnCopy">📋 프롬프트 복사<span class="soon">장소·시간대 먼저</span></button>
+    </div>
+  </section>
+
+  <!-- 주민 선택 (10-B) -->
+  <section class="screen" id="s-villagers" aria-label="주민 선택">
+    <div class="card">
+      <h2>🐾 고른 주민 <span id="vpickedN" style="color:var(--sub);font-weight:500"></span></h2>
+      <div class="vpicked" id="vpicked"></div>
+      <div class="actions" style="align-items:center">
+        <label style="font-size:13px;color:var(--sub);display:flex;align-items:center;gap:6px">인원
+          <input class="vn" id="vn" type="number" min="1" max="10" value="3" style="width:72px" aria-label="랜덤으로 고를 주민 수"></label>
+        <button class="btn alt" id="vrand" style="min-width:0">🎲 랜덤으로 고르기<span class="soon">필터 안에서 · 선택이 바뀜</span></button>
+      </div>
+      <button class="chip" id="vclear" style="margin-top:8px">모두 빼기</button>
+    </div>
+    <div class="card">
+      <h2>🔎 주민 찾기 <span id="vcount" style="color:var(--sub);font-weight:500"></span></h2>
+      <div class="vtools">
+        <input type="search" id="vq" placeholder="이름 검색 (한국어·영어)" aria-label="주민 이름 검색">
+        <select id="vsp" aria-label="종족 필터"><option value="">종족 전체</option></select>
+        <select id="vpe" aria-label="성격 필터"><option value="">성격 전체</option></select>
+        <label style="grid-column:1/-1;font-size:14px;display:flex;align-items:center;gap:6px;min-height:44px"><input type="checkbox" id="vfav" style="width:20px;height:20px"> ⭐ 즐겨찾기만 보기</label>
+      </div>
+      <div class="vgrid" id="vgrid"></div>
+    </div>
+    <div class="card">
+      <details>
+        <summary style="cursor:pointer;font-size:14px;font-weight:700;min-height:44px;display:flex;align-items:center">ℹ️ 주민 데이터·이미지 출처와 이용 안내</summary>
+        <div id="vsource"></div>
+      </details>
+    </div>
+  </section>
+
+  <!-- 주민대표 (10-C) -->
+  <section class="screen" id="s-rep" aria-label="주민대표">
+    <div class="card">
+      <h2>👤 주민대표 사진</h2>
+      <p class="hint">사진은 <b>이 브라우저 안에만</b> 저장되고 어디에도 자동으로 보내지 않아요. 캐릭터를 만들 때는 같은 사진 파일을 <b>주민대표/</b> 폴더에 넣어 주세요. 대화창에서 Claude가 그 파일을 본인 Canva 계정(비공개)에 올려 참고로 써요.</p>
+      <div id="rPhotoView"></div>
+      <div class="actions">
+        <label class="btn alt filebtn" style="min-width:0">📷 <span id="rPhotoBtnText">사진 올리기</span><input type="file" id="rPhotoIn" accept="image/*" aria-label="주민대표 사진 선택"></label>
+        <button class="btn ghost" id="rPhotoDel" style="min-width:0">🗑️ 사진 삭제</button>
+      </div>
+      <span class="rlabel">사진 종류</span>
+      <div class="chips" role="group" aria-label="사진 종류">
+        <button class="chip" data-rkind="photo">실제 사람 사진 → 동숲 스타일로 변환</button>
+        <button class="chip" data-rkind="avatar">게임 아바타 그대로</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🔍 유지할 외모 특징</h2>
+      <p class="hint">사진에서 보이는 것만 적어 주세요. 모르는 칸은 비워 두면 프롬프트에서 빠져요. 대화창에 사진을 보여주면 Claude가 함께 채워 드려요.</p>
+      <textarea class="rfield" id="rFeat" rows="14" aria-label="외모 특징"></textarea>
+      <div class="actions">
+        <button class="btn" id="rCopy" style="min-width:0">📋 캐릭터 만들기 프롬프트 복사<span class="soon" id="rCopyHint">사진을 먼저 올려 주세요</span></button>
+      </div>
+      <details style="margin-top:10px"><summary style="cursor:pointer;font-size:13.5px;color:var(--sub);min-height:44px;display:flex;align-items:center">✉️ 프롬프트 보기</summary>
+        <textarea class="rfield" id="rPromptOut" rows="10" readonly style="font-family:ui-monospace,monospace" aria-label="캐릭터 만들기 프롬프트"></textarea></details>
+    </div>
+
+    <div class="card">
+      <h2>✅ 승인한 주민대표 캐릭터</h2>
+      <div class="rstatus" id="rStatus"></div>
+      <div id="rApprovedView"></div>
+      <p class="hint">대화창에서 만든 캐릭터가 마음에 들면 아래를 채워 승인하세요. 이후 배경화면은 이 캐릭터를 기준으로 만들어요 (프롬프트 연결은 10-D).</p>
+      <span class="rlabel">Canva 이미지 ID <span style="font-weight:400;color:var(--sub)">(대화창에서 Claude가 알려 드려요, 예: MAHcFW7vY5E)</span></span>
+      <input class="rfield" id="rMediaId" placeholder="M으로 시작하는 ID" autocomplete="off" spellcheck="false">
+      <span class="rlabel">승인 이미지 (백업) <span style="font-weight:400;color:var(--sub)">Canva에서 받아 주민대표/ 폴더에 넣은 파일</span></span>
+      <label class="btn ghost filebtn" style="display:block;text-align:center">🖼️ <span id="rApprBtnText">승인 이미지 파일 고르기</span><input type="file" id="rApprIn" accept="image/*" aria-label="승인 캐릭터 이미지 선택"></label>
+      <div class="actions">
+        <button class="btn" id="rApprove" style="min-width:0">✅ 승인 저장</button>
+        <button class="btn ghost" id="rReset" style="min-width:0">↩️ 캐릭터 초기화</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 결과 -->
+  <section class="screen" id="s-result" aria-label="생성 결과">
+    <div class="card">
+      <h2>🖼️ 생성 결과</h2>
+      <p class="hint">이미지는 Claude 대화창에서 Canva로 만들어져요. 여기엔 마지막으로 복사한 설정이 보여요.</p>
+      <div id="current"><div class="empty"><span class="big">📋</span>아직 복사한 프롬프트가 없어요.<br>만들기 화면에서 "생성용 프롬프트 복사"를 눌러주세요.</div></div>
+      <div class="actions">
+        <button class="btn" id="btnAgain" disabled>🔄 다시 생성<span class="soon">같은 프롬프트를 다시 복사</span></button>
+        <button class="btn ghost" id="btnEdit">✏️ 옵션 수정하기</button>
+      </div>
+      <div class="actions">
+        <button class="btn alt" id="btnFav" disabled>☆ 즐겨찾기</button>
+      </div>
+      <p class="hint" style="margin-top:12px">💾 원본 저장: 이미지는 Canva <b>업로드</b> 목록에서 받아요. 이 앱은 이미지를 갖고 있지 않아요.</p>
+    </div>
+  </section>
+
+  <!-- 기록 -->
+  <section class="screen" id="s-history" aria-label="생성 기록">
+    <div class="card">
+      <h2>🕰️ 생성 기록</h2>
+      <p class="hint">프롬프트를 복사할 때마다 자동으로 남아요 (이 브라우저에만 저장, 최근 100개 + 즐겨찾기).</p>
+      <div id="histList"></div>
+    </div>
+  </section>
+
+  <!-- 즐겨찾기 -->
+  <section class="screen" id="s-fav" aria-label="즐겨찾기">
+    <div class="card">
+      <h2>⭐ 즐겨찾기</h2>
+      <div id="favList"></div>
+    </div>
+    <div class="card">
+      <h2>📏 고정 스타일 규칙</h2>
+      <p class="hint">이미지 생성 시 항상 적용할 규칙입니다 (4단계 프롬프트에 고정).</p>
+      <ul class="rules">
+        <li>Animal Crossing: New Horizons 게임 속 실제 스크린샷 느낌</li>
+        <li>부드럽고 둥근 3D 게임 그래픽, 게임 카메라 시점, 자연스러운 원근감</li>
+        <li>일러스트·애니메이션풍 금지 / 극사실 사진 금지</li>
+        <li>글자·워터마크·UI·로고·장식 프레임 금지</li>
+        <li>캐릭터 없음, 풍경이 화면의 중심</li>
+        <li>참고 이미지 공통점: 눈높이의 낮은 카메라, 화면 중간쯤의 수평선, 하늘이 화면의 절반 이상, 멀리 작은 섬 실루엣, 납작하고 부드러운 구름, 오브젝트는 작고 적게(1~3개)</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<nav aria-label="화면 이동">
+  <button class="active" data-go="s-home"><span>🏠</span>홈</button>
+  <button data-go="s-make"><span>🌴</span>만들기</button>
+  <button data-go="s-villagers"><span>🐾</span>주민</button>
+  <button data-go="s-rep"><span>👤</span>대표</button>
+  <button data-go="s-result"><span>🖼️</span>결과</button>
+  <button data-go="s-history"><span>🕰️</span>기록</button>
+  <button data-go="s-fav"><span>⭐</span>즐겨찾기</button>
+</nav>
+
+<script src="data/villagers.js"></script>
+<script src="data/approved_rep.js"></script><!-- 파일로 승인한 주민대표 (없어도 작동) --><!-- 10-A: 주민 413명 로컬 데이터 (인터넷 없이 검색) -->
+<script>
+// 알림·확인을 앱 안에서 처리 (웹페이지로 올렸을 때 alert·confirm 창이 막히므로)
+function toast(msg){
+  let t = document.getElementById('toast');
+  if (!t) { t = document.createElement('div'); t.id = 'toast'; t.setAttribute('role', 'status'); document.body.append(t); }
+  t.textContent = msg; t.classList.add('show'); clearTimeout(toast.h); toast.h = setTimeout(()=>t.classList.remove('show'), 3500);
+}
+// 지우기 같은 되돌릴 수 없는 동작: 4초 안에 한 번 더 눌러야 진행
+function twoTap(btn, msg){
+  const now = Date.now();
+  if (btn.dataset.armed && now - btn.dataset.armed < 4000) { delete btn.dataset.armed; return true; }
+  btn.dataset.armed = now; toast(msg + ' 한 번 더 누르면 진행돼요.'); return false;
+}
+// 주민 데이터: 파일이 없어도 기존 기능은 그대로 작동하도록 빈 목록으로 대체
+const VD = window.VILLAGER_DATA || {meta:null, ko:{species:{},personality:{},hobby:{}}, villagers:[]};
+const findVillagers = q => { q = (q||'').trim().toLowerCase(); return q ? VD.villagers.filter(v => (v.ko||'').includes(q) || v.en.toLowerCase().includes(q)) : VD.villagers; };
+
+// 옵션 정의: free = 자유 입력칸을 여는 항목, multi = 여러 개 선택
+const OPTIONS = [
+  // 8단계: 만들기 모드 + 상상 테마 (테마 카드는 상상 모드일 때만 보임)
+  {key:'mode', icon:'🎮', title:'만들기 모드', hint:'🎮 실제 게임에서 볼 수 있는 풍경만 / ✨ 게임에선 못 하는 상상도 OK (그래픽은 게임 그대로)', items:['실제 게임 풍경','상상 속 동숲']},
+  {key:'theme', icon:'✨', title:'상상 테마', imagine:true, hint:'테마를 하나 고르거나, 아래에 직접 적어도 돼요. 둘 다 해도 좋아요.',
+   groups:{'바닷속 마을':'🌊 바다 판타지','구름 위 섬':'☁️ 하늘 판타지','달 위의 섬':'🌙 우주 판타지','거대한 꽃':'🌸 거대한 세계','요정 마을':'🧚 마법과 동화','얼음 왕국':'❄️ 특별한 세계'},
+   items:['바닷속 마을','해저 산책','산호 정원','해파리와 함께','고래와 여행','바닷속 궁전',
+     '구름 위 섬','하늘에서 피크닉','하늘을 나는 주민들','무지개 다리','별 구름 마을',
+     '달 위의 섬','별들 사이에서 생활','우주 여행','행성 위 마을','은하수 캠핑',
+     '거대한 꽃','초대형 버섯','주민보다 거대한 과일','미니어처 세계','거대한 동물들과 생활',
+     '요정 마을','마법의 숲','동화 속 성','마법사 주민','신비로운 빛','마법의 꽃',
+     '얼음 왕국','눈으로 만들어진 마을','사계절이 동시에 존재하는 곳','반짝이는 보석 섬','꿈속의 섬','유리로 만들어진 바다'],
+   freeAlways:true, freeLabel:'「동숲에서 이런 게 가능했으면! 💭」',
+   freeHint:'평소 모동숲에서 상상했던 장면을 자유롭게 적어주세요. 게임에서는 구현하기 어렵거나 불가능한 장면도 괜찮아요. 여러분의 상상을 배경화면으로 만들어드립니다.',
+   placeholder:'예: 주민대표와 주민들이 거대한 달 위에 앉아 우리 섬을 내려다보는 장면.',
+   examples:['주민들과 바닷속을 걷고 싶어요. 물속에서도 주민들이 평소처럼 걷고 있고, 주변에 고래와 해파리가 지나가며 바닥에는 산호와 꽃이 있는 장면.',
+     '주민대표와 주민들이 거대한 달 위에 앉아 우리 섬을 내려다보는 장면.',
+     '주민들보다 훨씬 큰 꽃들 사이에서 작은 피크닉을 하는 장면.',
+     '섬 전체가 밤하늘에 떠 있고 주민들이 별을 구경하는 장면.']},
+  {key:'place', icon:'🏝️', title:'장소', items:['해변','바다','절벽','바위 해안','숲','강','폭포','마을길','광장','부두','캠핑장','섬 전망','기타 자유 입력'], free:'기타 자유 입력'},
+  {key:'time', icon:'🌅', title:'시간대', items:['일출','오전','한낮','오후','노을','저녁','밤','새벽']},
+  {key:'weather', icon:'⛅', title:'날씨', items:['맑음','구름','흐림','비','눈','안개','별이 많은 밤']},
+  {key:'mood', icon:'💭', title:'분위기', items:['평화로운','따뜻한','몽환적인','쓸쓸한','신비로운','포근한','여름 휴양지','조용한','자유 선택'], free:'자유 선택'},
+  {key:'camera', icon:'📷', title:'카메라 구도', items:['수평선 중심','하늘을 넓게','바다를 넓게','지형 중심','낮은 시점','원근감 강조','광각 풍경','자연스러운 게임 카메라']},
+  {key:'objects', icon:'🐚', title:'추가 오브젝트', hint:'여러 개 고를 수 있어요. 풍경을 방해하지 않게 자연스럽게 배치됩니다.', multi:true, none:'없음',
+    items:['조개','풍선','선물 상자','바위','꽃','나무','야자수','벤치','등대','폭포','별','달','무지개','모닥불','없음','직접 입력'], free:'직접 입력'},
+  // 10-D 인물 설정 (시안비교 A·B·D·E 중 사용자가 고름. C는 사용자 판단으로 뺌)
+  {key:'rep', icon:'👤', title:'주민대표 등장', hint:'👤 대표 화면에서 승인한 캐릭터가 있어야 들어가요.', items:['주민대표 넣기','주민대표 빼기']},
+  {key:'charSize', icon:'📏', title:'캐릭터 크기', hint:'시안비교 A·B·D·E와 같은 문구를 써요. 주민대표나 주민이 있을 때만 적용.', items:['A 크게','B 조금 작게','D 배경 중심 (작게)','E 캐릭터 중심 (가깝게)']},
+  {key:'charPos', icon:'📍', title:'캐릭터 위치', items:['풍경 속 자연스럽게','중앙','중앙보다 조금 아래','왼쪽','오른쪽']},
+  {key:'facing', icon:'🧍', title:'캐릭터 방향', items:['앞모습 (얼굴 보이게)','뒷모습 (풍경 바라보기)']},
+  {key:'action', icon:'🫂', title:'최애와 하고 싶은 일', hint:'주민대표와 ⭐최애(👥 카드에서 지정)가 함께해요. 고르지 않으면 자연스럽게 서 있어요. 맨 아래 "직접 입력"에 하고 싶은 장면을 적어도 돼요.',
+   free:'직접 입력', placeholder:'최애와 이런 순간을 보내고 싶어요 💭 예: 최애 주민과 손잡고 해변을 걷는 장면',
+   groups:{'주민 껴안기':'🫂 애정 표현', '카페에서 함께 차 마시기':'☕ 함께하는 일상', '함께 셀카 찍기':'📸 특별한 순간', '힘들 때 위로받기':'💗 감정적인 장면', '직접 입력':'💭 내가 원하는 장면'},
+   items:['주민 껴안기','서로 손잡기','주민에게 기대기','주민이 사용자에게 기대기','머리 쓰다듬기','토닥여주기','서로 마주 보고 웃기','나란히 앉기','어깨에 기대기','따뜻하게 안아주기',
+     '카페에서 함께 차 마시기','피크닉','함께 산책','낮잠','책 읽기','낚시','꽃 구경','요리하기','캠핑','게임하기','해변에서 휴식','비 오는 날 우산 쓰기',
+     '함께 셀카 찍기','생일 축하받기','선물 주고받기','편지 주고받기','축제 즐기기','노을 함께 바라보기','별 구경하기','크리스마스 함께 보내기','눈사람 만들기','특별한 기념일 보내기',
+     '힘들 때 위로받기','주민이 옆에 앉아 있어주기','주민이 사용자를 토닥여주기','꼭 안아주기','응원해주기','슬플 때 곁에 있어주기','기쁜 일을 함께 축하하기','아무 말 없이 함께 쉬기','사용자가 주민에게 위로해주기','서로 위로하는 장면',
+     '직접 입력']},
+  {key:'size', icon:'📱', title:'배경화면 크기', hint:'모바일은 상단에 시계·위젯 여백을 둔 구도로 만듭니다.', items:['모바일 세로형','모바일 잠금화면','모바일 일반 배경','태블릿','PC 배경화면','정사각형']},
+];
+const state = {mode:['실제 게임 풍경'], theme:[], place:[], time:[], weather:[], mood:[], camera:[], objects:[], rep:['주민대표 넣기'], charSize:['B 조금 작게'], charPos:['풍경 속 자연스럽게'], facing:['앞모습 (얼굴 보이게)'], action:[], bias:'', size:['모바일 세로형'], free:{}};
+
+const $ = s => document.querySelector(s);
+const optBox = $('#options');
+OPTIONS.forEach(o=>{
+  const card = document.createElement('div'); card.className='card';
+  card.innerHTML = `<h2>${o.icon} ${o.title}</h2><p class="hint">${o.hint || (o.multi?'여러 개 선택':'하나를 골라주세요')}</p><div class="chips" role="group" aria-label="${o.title}"></div>`
+    + (o.freeAlways ? `<span class="rlabel">${o.freeLabel}</span><p class="hint">${o.freeHint}</p><textarea class="free show" rows="3" data-key="${o.key}" placeholder="${o.placeholder}" aria-label="${o.freeLabel}"></textarea>`
+       : o.free ? `<input class="free" data-key="${o.key}" placeholder="${o.placeholder||'직접 입력해주세요'}" aria-label="${o.title} 직접 입력">` : '')
+    + (o.examples ? `<div class="exs">${o.examples.map((x,i)=>`<button type="button" class="exbtn" data-exkey="${o.key}" data-ex="${i}">💡 ${x}</button>`).join('')}</div>` : '');
+  const chips = card.querySelector('.chips');
+  o.items.forEach(it=>{
+    if (o.groups?.[it]) chips.insertAdjacentHTML('beforeend', `<span class="rlabel" style="flex-basis:100%;margin:8px 0 0">${o.groups[it]}</span>`);
+    const b = document.createElement('button'); b.className='chip'; b.textContent=it; b.type='button';
+    b.onclick = ()=>pick(o, it); chips.appendChild(b);
+  });
+  optBox.appendChild(card); o.el = card;
+});
+document.addEventListener('change', e=>{ if (e.target.id === 'biasSel') { state.bias = e.target.value; render(); } });
+optBox.addEventListener('click', e=>{ const b = e.target.closest('[data-ex]'); if (!b) return;   // 예시 누르면 입력칸에 채움
+  const o = OPTIONS.find(o=>o.key===b.dataset.exkey); state.free[o.key] = o.examples[+b.dataset.ex]; render(); });
+optBox.addEventListener('input', e=>{ if(e.target.dataset.key){ state.free[e.target.dataset.key]=e.target.value; render(); }});
+
+function pick(o, it){
+  let sel = state[o.key];
+  if(!o.multi) sel = sel[0]===it ? [] : [it];
+  else if(it===o.none) sel = sel.includes(it) ? [] : [it];   // '없음'은 다른 항목과 함께 못 고름
+  else { sel = sel.filter(x=>x!==o.none); sel = sel.includes(it) ? sel.filter(x=>x!==it) : [...sel, it]; }
+  state[o.key] = sel; render();
+}
+
+function label(o, st=state){
+  return (st[o.key]||[]).map(v => v===o.free ? (st.free[o.key]?.trim() || '(직접 입력 대기)') : v).join(', ');
+}
+const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function render(){
+  OPTIONS.forEach(o=>{
+    o.el.hidden = !!o.imagine && !isImagine();
+    o.el.querySelectorAll('.chip').forEach(b=>b.setAttribute('aria-pressed', state[o.key].includes(b.textContent)));
+    const f = o.el.querySelector('.free');
+    if(f){ f.classList.toggle('show', !!o.freeAlways || state[o.key].includes(o.free)); if(f.value !== (state.free[o.key]||'')) f.value = state.free[o.key]||''; }
+  });
+  $('#summary').innerHTML = OPTIONS.filter(o=>!o.imagine || isImagine()).map(o=>`${o.icon} ${o.title}: <b>${label(o) || '—'}</b>`).join('<br>');
+  { const {rep, vill} = castNow(), wantRep = state.rep[0] !== '주민대표 빼기';
+    $('#castInfo').innerHTML =
+      `👤 주민대표: <b>${!wantRep ? '빼기' : rep ? '승인한 캐릭터 (' + esc(rep.mediaId) + ')' : '승인한 캐릭터 없음 → 👤 대표에서 승인'}</b><br>` +
+      `🐾 주민: <b>${vill.length ? vill.map(v=>esc(vname(v))).join(', ') : '없음'}</b>` +
+      (vill.length + (rep ? 1 : 0) > 6 ? '<br>⚠️ 인원이 많으면 풍경이 가려질 수 있어요' : '') +
+      (vill.length ? `<br><label style="display:flex;align-items:center;gap:6px;margin-top:6px">⭐ 최애 <select id="biasSel" class="rfield" style="width:auto;padding:6px 10px;min-height:40px">` +
+        `<option value="">정하지 않음 (첫 주민)</option>` + vill.map(v=>`<option value="${v.id}" ${v.id===state.bias?'selected':''}>${esc(vname(v))}</option>`).join('') + `</select></label>` : ''); }
+  const ok = ready();
+  $('#btnCopy').disabled = !ok;
+  $('#btnCopy').querySelector('.soon').textContent = ok ? '대화창에 붙여넣기' : isImagine() ? '상상 테마나 문장 먼저' : '장소·시간대 먼저';
+  $('#promptOut').value = ok ? buildPrompt() : '장소와 시간대를 먼저 골라주세요.';
+}
+
+// 이미지 모델은 영어 프롬프트를 더 잘 따라서 영어로 바꿔 넣음. 없는 값(직접 입력)은 그대로.
+const EN = {
+  '해변':'a sandy beach with gentle waves','바다':'the open sea with no land in the foreground','절벽':'a grassy cliff edge overlooking the sea',
+  '바위 해안':'a rocky shore of large flat-topped boulders','숲':'a quiet forest of round cedar and hardwood trees','강':'a calm river winding through grass',
+  '폭포':'a small waterfall dropping from a grassy cliff','마을길':'a dirt path through a small village','광장':'an open village plaza',
+  '부두':'a wooden pier reaching into the sea','캠핑장':'a small campsite clearing','섬 전망':'a high viewpoint over the whole island',
+  '일출':'sunrise','오전':'morning','한낮':'midday with strong sunlight','오후':'afternoon','노을':'golden sunset','저녁':'evening dusk','밤':'night','새벽':'early dawn',
+  '맑음':'clear sky','구름':'soft drifting clouds','흐림':'overcast sky','비':'light rain','눈':'gentle snowfall','안개':'soft fog','별이 많은 밤':'a sky full of stars',
+  '평화로운':'peaceful','따뜻한':'warm','몽환적인':'dreamy','쓸쓸한':'lonely','신비로운':'mysterious','포근한':'cozy','여름 휴양지':'summer vacation','조용한':'quiet',
+  '수평선 중심':'horizon centered in the frame','하늘을 넓게':'sky filling most of the frame','바다를 넓게':'sea filling most of the frame',
+  '지형 중심':'terrain as the main subject','낮은 시점':'very low camera close to the ground','원근감 강조':'strong depth and perspective',
+  '광각 풍경':'wide-angle landscape','자연스러운 게임 카메라':'natural in-game photo-mode camera at eye level',
+  '조개':'a few small scallop seashells','풍선':'a single floating balloon carrying a present','선물 상자':'a small wrapped present box','바위':'a few rounded rocks',
+  '꽃':'small clusters of flowers','나무':'a few round trees','야자수':'a couple of palm trees','벤치':'a single wooden bench','등대':'a small lighthouse in the distance',
+  '별':'scattered stars','달':'a moon partly behind clouds','무지개':'a large rainbow arcing across the sky','모닥불':'a small campfire',
+};
+const RATIO = {'모바일 세로형':'PORTRAIT_9_16','모바일 잠금화면':'PORTRAIT_9_16','모바일 일반 배경':'PORTRAIT_9_16','태블릿':'PORTRAIT_3_4','PC 배경화면':'LANDSCAPE_16_9','정사각형':'SQUARE_1_1'};
+const en = (o)=>state[o.key].filter(v=>v!==o.none).map(v=>v===o.free ? (state.free[o.key]||'').trim() : (EN[v]||v)).filter(Boolean).join(', ');
+
+// 10-D 인물: 크기 문구는 시안비교 1차에서 실제로 A·B·D·E를 만든 문구 그대로 (Canva는 요청의 약 0.7배로 그림)
+const CHAR_SIZE = {
+  'A 크게': 'the characters are large — their full height is about 45% of the image height',
+  'B 조금 작게': 'the characters are slightly smaller — their full height is about 40% of the image height, with more scenery visible around them',
+  'D 배경 중심 (작게)': 'wide view, the characters are small — their full height is about 15% of the image height — and the scenery is the main subject, like a landscape photo with small friends in it',
+  'E 캐릭터 중심 (가깝게)': 'closer camera, the characters are big — their full height is about 60% of the image height — with full bodies visible and the scenery still visible behind them',
+};
+const CHAR_POS = {
+  '풍경 속 자연스럽게': 'placed naturally where they would really stand in this scenery, not forced to the exact center',
+  '중앙': 'standing in the center of the frame',
+  '중앙보다 조금 아래': 'standing slightly below the center of the frame',
+  '왼쪽': 'standing in the left third of the frame, leaving open scenery on the right',
+  '오른쪽': 'standing in the right third of the frame, leaving open scenery on the left',
+};
+const FACING = {
+  '앞모습 (얼굴 보이게)': 'turned toward the camera at a three-quarter angle so their faces are clearly visible',
+  '뒷모습 (풍경 바라보기)': 'seen from behind, looking at the scenery',
+};
+// 9단계 행동: MAIN = 주민대표(없으면 첫 주민), PARTNER = ⭐최애(없으면 다른 첫 주민)
+const ACTION = {
+  '주민 껴안기':'MAIN and PARTNER hugging each other warmly', '서로 손잡기':'MAIN and PARTNER holding hands',
+  '주민에게 기대기':'MAIN leaning gently on PARTNER', '주민이 사용자에게 기대기':'PARTNER leaning gently on MAIN',
+  '머리 쓰다듬기':"MAIN gently patting PARTNER's head", '토닥여주기':'MAIN and PARTNER gently patting each other on the back',
+  '서로 마주 보고 웃기':'MAIN and PARTNER facing each other and smiling', '나란히 앉기':'MAIN and PARTNER sitting side by side',
+  '어깨에 기대기':"MAIN and PARTNER sitting together, one resting their head on the other's shoulder", '따뜻하게 안아주기':'MAIN and PARTNER in a warm, gentle embrace',
+  '카페에서 함께 차 마시기':'MAIN and PARTNER sitting across a small cafe table drinking tea together', '피크닉':'MAIN and PARTNER having a picnic on a blanket',
+  '함께 산책':'MAIN and PARTNER walking together side by side', '낮잠':'MAIN and PARTNER napping together peacefully', '책 읽기':'MAIN and PARTNER reading books together',
+  '낚시':'MAIN and PARTNER fishing together with fishing rods', '꽃 구경':'MAIN and PARTNER looking at flowers together', '요리하기':'MAIN and PARTNER cooking together',
+  '캠핑':'MAIN and PARTNER relaxing together at a small campsite', '게임하기':'MAIN and PARTNER playing a game together', '해변에서 휴식':'MAIN and PARTNER relaxing together on the beach',
+  '비 오는 날 우산 쓰기':'MAIN and PARTNER sharing one umbrella in the rain',
+  '함께 셀카 찍기':'MAIN and PARTNER taking a selfie together, MAIN holding up a phone camera', '생일 축하받기':"PARTNER celebrating MAIN's birthday with a cake",
+  '선물 주고받기':'MAIN and PARTNER exchanging wrapped presents', '편지 주고받기':'MAIN and PARTNER exchanging letters', '축제 즐기기':'MAIN and PARTNER enjoying a festival together with decorations',
+  '노을 함께 바라보기':'MAIN and PARTNER watching the sunset together', '별 구경하기':'MAIN and PARTNER stargazing together',
+  '크리스마스 함께 보내기':'MAIN and PARTNER celebrating Christmas together by a decorated tree', '눈사람 만들기':'MAIN and PARTNER building a snowman together',
+  '특별한 기념일 보내기':'MAIN and PARTNER celebrating a special anniversary together',
+  '힘들 때 위로받기':'PARTNER comforting MAIN after a hard day, sitting close', '주민이 옆에 앉아 있어주기':'PARTNER quietly sitting beside MAIN',
+  '주민이 사용자를 토닥여주기':"PARTNER gently patting MAIN's shoulder", '꼭 안아주기':'PARTNER giving MAIN a tight, comforting hug',
+  '응원해주기':'PARTNER cheering MAIN on', '슬플 때 곁에 있어주기':'PARTNER staying close to MAIN, who feels sad',
+  '기쁜 일을 함께 축하하기':'MAIN and PARTNER celebrating good news together joyfully', '아무 말 없이 함께 쉬기':'MAIN and PARTNER resting together quietly without words',
+  '사용자가 주민에게 위로해주기':'MAIN comforting PARTNER', '서로 위로하는 장면':'MAIN and PARTNER comforting each other',
+};
+// 행동 종류별 자세 규칙 (사용자 요구: 껴안기·손잡기·위로)
+const POSE_RULE = [
+  [/껴안|안아/, 'Hug: arms placed naturally around each other, bodies close, faces side by side and not overlapping, no strange joints or hands, both still clearly recognizable.'],
+  [/손잡/, 'Holding hands: the joined hands are clearly visible, no merged or extra hands, natural walking pose; the camera shows the hands clearly.'],
+  [/위로|곁에|옆에 앉아|토닥/, 'Comfort: sitting or standing close, gentle caring expressions, warm soft lighting that fits the feeling.'],
+  [/기대/, 'Leaning: natural relaxed weight on the other, faces not overlapping.'],
+];
+function actionLines(rep, vill){
+  const a = state.action?.[0]; if (!a) return null;
+  const custom = a === '직접 입력' ? (state.free.action||'').trim() : '';
+  if (a === '직접 입력' && !custom) return null;
+  const bias = vill.find(v=>v.id===state.bias) || null;
+  const main = rep ? 'the 주민대표 (main character)' : vill[0] ? vname(vill[0]) : null;
+  const partnerV = bias && (rep || bias !== vill[0]) ? bias : vill.find(v=>v !== (rep ? null : vill[0]));
+  const partner = partnerV ? vname(partnerV) : null;
+  if (!main || !partner) return `Action: ${custom || a} (needs two characters — only one is in the scene, so show them alone enjoying the moment).`;
+  const rule = POSE_RULE.find(([re])=>re.test(custom || a));
+  const others = (rep ? 1 : 0) + vill.length > 2;
+  return [
+    custom ? `Action (the user's own words in Korean — keep the meaning exactly, do not change the idea): "${custom}". Here "나"/"사용자" = ${main}, "최애"/"주민" = ${partner}.`
+           : `Action: ${ACTION[a].replace(/MAIN/g, main).replace(/PARTNER/g, partner)}.`,
+    rule && rule[1],
+    `${partner} is the favorite villager: place them closest to ${main}; the interaction between the two is the focus of the composition and is easy to understand at a glance.`,
+    others ? `Other characters stay nearby but a little further back, naturally doing their own relaxed activities, not covering the two.` : '',
+    `Expressions match the feeling of the action. Same scale for everyone, nobody merged into another.`,
+  ].filter(Boolean).join('\n');
+}
+const castNow = ()=>({
+  rep: state.rep[0] !== '주민대표 빼기' && REP.approved ? REP.approved : null,
+  vill: VS.sel.map(id=>byId.get(id)).filter(Boolean),
+});
+function castLines(){
+  const {rep, vill} = castNow(); if (!rep && !vill.length) return null;
+  const n = (rep ? 1 : 0) + vill.length;
+  const who = [
+    rep && `- Main character (주민대표): the approved player character — Canva reference image ID ${rep.mediaId}${rep.fileName ? ` (backup file 주민대표/${rep.fileName})` : ''}. Reproduce exactly: same face, hair, hair color, skin tone, accessories, outfit.`,
+    ...vill.map(v => `- Villager: ${v.ko || v.en} (${v.en}, ${v.species}) — must look exactly like the real in-game villager, no design changes. Reference file if present: 주민이미지/${v.ko || v.en}.png`),
+  ].filter(Boolean);
+  const size = CHAR_SIZE[state.charSize[0]] || CHAR_SIZE['B 조금 작게'];
+  const pos = CHAR_POS[state.charPos[0]] || CHAR_POS['풍경 속 자연스럽게'];
+  const face = FACING[state.facing[0]] || FACING['앞모습 (얼굴 보이게)'];
+  const landscape = /PC|정사각/.test(state.size[0]||'');
+  const act = actionLines(rep, vill);
+  return [
+    `Characters (${n}):`, ...who,
+    `Size: ${size}.`, `Position: ${pos}.`, `Facing: ${face}.`,
+    landscape ? `Wide frame: keep the characters off-center so plenty of scenery shows.` : '',
+    act || (n > 1 ? `Keep a little space between them so no one overlaps or hides another; all at the same game scale.` : ''),  // 행동이 있으면 '떨어져 서기' 대신 행동
+    n > 6 ? `Many characters: keep them small and spread naturally so they do not cover the scenery.` : '',
+    `Same game rendering and lighting for characters and background, ${SEATED.test([state.action?.[0] === '직접 입력' ? state.free.action : state.action?.[0], isImagine() ? state.free.theme : ''].join(' ')) ? 'seated naturally' : 'feet on the ground'}, shadows match the light, relaxed natural expressions, nobody cut off at the edges, not pasted-in.`,
+  ].filter(Boolean).join('\n');
+}
+
+// 8단계 상상 모드: 테마 영어 표현 + 자유 문장(한국어 원문 그대로)
+function isImagine(st = state){ return (st.mode||[])[0] === '상상 속 동숲'; }
+const THEME_EN = {
+  '바닷속 마을':'a village built on the sea floor, houses among coral, fish swimming by, light rays from the surface','해저 산책':'walking on the sea floor as if on land, fish and bubbles around',
+  '산호 정원':'a colorful coral garden on the sea floor','해파리와 함께':'softly glowing jellyfish drifting all around','고래와 여행':'traveling on the back of a giant friendly whale','바닷속 궁전':'an underwater palace made of shells and pearls',
+  '구름 위 섬':'an island floating on fluffy clouds high in the sky','하늘에서 피크닉':'a picnic on top of a fluffy cloud in the sky','하늘을 나는 주민들':'characters flying gently through the sky',
+  '무지개 다리':'a walkable rainbow bridge across the sky','별 구름 마을':'a village on clouds full of twinkling stars',
+  '달 위의 섬':'sitting on the moon, looking down at a small island floating in space','별들 사이에서 생활':'everyday life among the stars in space','우주 여행':'a cute space journey past round planets',
+  '행성 위 마을':'a tiny village on a small round planet','은하수 캠핑':'camping beside the Milky Way',
+  '거대한 꽃':'giant flowers towering over the characters','초대형 버섯':'giant mushrooms as big as houses','주민보다 거대한 과일':'fruit much bigger than the characters',
+  '미니어처 세계':'a miniature world where the characters are tiny among big everyday objects','거대한 동물들과 생활':'living alongside friendly animals far bigger than the characters',
+  '요정 마을':'a fairy village with tiny glowing houses','마법의 숲':'an enchanted forest with soft glowing lights','동화 속 성':'a fairy-tale castle',
+  '마법사 주민':'characters dressed as wizards casting gentle sparkly magic','신비로운 빛':'mysterious soft floating lights','마법의 꽃':'magical softly glowing flowers',
+  '얼음 왕국':'an ice kingdom with clear ice castles','눈으로 만들어진 마을':'a village made entirely of snow',
+  '사계절이 동시에 존재하는 곳':'an island where spring, summer, autumn and winter exist at the same time in different areas','반짝이는 보석 섬':'an island of sparkling gemstones',
+  '꿈속의 섬':'a dreamy island like a dream, soft pastel haze','유리로 만들어진 바다':'a sea made of glass',
+};
+function imagineLines(){
+  const t = state.theme?.[0], free = (state.free.theme||'').trim();
+  return [
+    t && `Imagined world: ${THEME_EN[t] || t}.`,
+    free && `The user's own imagination (Korean — keep the core idea exactly, do not change or replace it; only add concrete visual details for world, place, background, time, weather, characters, actions, objects, camera, lighting and mood): "${free}"`,
+    `Any characters take part naturally in this imagined world (for example walking underwater, picnicking on clouds, exploring a planet).`,
+  ].filter(Boolean).join('\n');
+}
+const IMAGINE_STYLE = `Style: imagination is free, but the graphics stay exactly Animal Crossing: New Horizons' soft rounded 3D game graphics — cute rounded shapes, the game's own textures, soft colors, warm emotional lighting, characters and background in the same rendering, framed like an in-game photo. Not a fantasy illustration, not anime, not painterly.`;
+// 카페 행동 = 사용자가 지정한 게임 속 카페 실내 (참고이미지/카페.jpg, 커피잔.png). 바깥 장소·날씨·하늘은 무시하고 분위기만 유지
+const CAFE_ACTION = '카페에서 함께 차 마시기';
+const CAFE_SCENE = mood => `Location: INSIDE the island's cozy cafe (reference images 참고이미지/카페.jpg and 참고이미지/커피잔.png): dark wooden floor and wood paneling, green scalloped (fish-scale pattern) wallpaper, warm orange hanging lamps and flower-shaped wall sconces, a long wooden counter with glass siphon coffee makers and a coffee grinder, round green bar stools, green sofa booths facing each other across wooden tables, a yellow phone on a small side table, small framed pictures on the walls. The characters sit facing each other on the green sofas at one wooden table, each with the cafe's cup: a white cup and saucer with orange-brown stripes on the rim and a small brown pigeon emblem. The cafe owner, a pigeon barista, may stand behind the counter in the background. Indoors: ignore any outdoor place, sky, weather or sky objects; warm, dim indoor lighting.` + (mood ? ` Mood: ${mood}.` : '');
+// 앉아서 하는 행동이면 '발 붙이기' 대신 '자연스럽게 앉기'
+const SEATED = /앉|카페|피크닉|낮잠|책 읽기|낚시|쉬기|위로받기|곁에|어깨에 기대/;
+// 형태 보존 (사용자 요구 2026-11-27): 정체성·형태 > 고유 특징 > 배치 > 장면 조화 > 조명 > 미적 연출
+const SHAPE_RULES = hasCast => [
+  hasCast && `PRIORITY (highest first): 1) identity and exact shape of every referenced character and object, 2) their unique features, 3) natural placement and proportions, 4) harmony with the scene, 5) lighting and mood, 6) aesthetics. Never sacrifice 1 or 2 to make the picture prettier.`,
+  hasCast && `Characters — preserve exactly from the references: face shape, eye shape, eye position and size, head shape, body proportions, species features (ears, tail, muzzle), colors and patterns, outfit design, accessories, every unique trait. Keep silhouettes and proportions, change colors as little as possible, add no decorations that are not in the reference, do not oversimplify. Do not reinterpret anyone in another style or swap them for a similar-looking character.`,
+  `Objects (flowers, fruit, furniture, tools, shells, buildings, trees, presents, cups) keep their real in-game shapes and designs: distinct petal shapes per flower type, correct fruit shapes and colors, furniture structure, tool parts, shell silhouettes per type, main building structure. Never replace an object with a different but similar-looking one.`,
+  `Avoid: ${hasCast ? "a face turning into another character, changed eye position or size, changed body ratio, deformed ears or tails, malformed hands or feet, characters melting into the background, features mixing between characters, a redesign that differs from the reference, " : ''}items turning into other items, objects merging into each other.`,
+  `Rendering: rounded soft 3D in-game graphics with in-game proportions, natural materials, soft light, natural shadows, consistent in-game object shapes — no photorealism, anime, watercolor or generic AI illustration look.`,
+].filter(Boolean).join('\n');
+function buildPrompt(){
+  const g = k => en(OPTIONS.find(o=>o.key===k));
+  const size = state.size[0]; const mobile = size?.startsWith('모바일');
+  const cast = castLines();
+  const cafe = !!cast && state.action?.[0] === CAFE_ACTION;
+  const imagine = isImagine();
+  return [
+    imagine ? `Animal Crossing: New Horizons in-game screenshot look, but showing an IMAGINED scene that is impossible in the real game.` + (cast ? '' : ` Scenery only, no characters.`)
+            : `In-game screenshot from Animal Crossing: New Horizons, taken with the in-game camera.` + (cast ? '' : ` Scenery only.`),
+    imagine ? imagineLines() : `Only things that really exist in the game; no fantasy elements.`,
+    cafe ? CAFE_SCENE(g('mood')) : imagine ? [g('place') && `Base place (use only if it fits the imagined world): ${g('place')}.`, g('time') && `Time: ${g('time')}.`, g('weather') && `Weather: ${g('weather')}.`, g('mood') && `Mood: ${g('mood')}.`].filter(Boolean).join(' ') : `Place: ${g('place')}. Time: ${g('time')}.` + (g('weather')?` Weather: ${g('weather')}.`:'') + (g('mood')?` Mood: ${g('mood')}.`:''),
+    g('camera') ? `Camera: ${g('camera')}.` : `Camera: natural in-game camera at eye level, horizon around the middle of the frame.`,
+    cafe ? '' : g('objects') ? `Small, naturally placed objects that do not dominate the scene: ${g('objects')}.` : `No extra objects.`,
+    cafe ? `Style: soft rounded 3D game graphics with the game's own textures, the same interior look as the cafe reference.`
+         : imagine ? IMAGINE_STYLE
+         : `Style: soft rounded 3D game graphics with the game's own textures, natural in-game lighting for the time of day, wide sense of space, natural perspective, sky and terrain in a pleasing balance, distant small island silhouettes on the horizon, flat soft clouds.`,
+    mobile && cafe ? `Vertical phone wallpaper: keep the top quarter calm (upper wall and lamps, nothing important) so a clock and widgets can sit there.` : mobile && imagine ? `Vertical phone wallpaper: keep the top quarter calm with nothing important so a clock and widgets can sit there, and keep the main scene uncut in the lower part.` : mobile ? `Vertical phone wallpaper: keep the top quarter calm open sky with nothing important so a clock and widgets can sit there, and keep the main scenery uncut in the lower part.` : '',
+    cast,
+    SHAPE_RULES(!!cast),
+    cast ? `Do NOT include: any extra characters, villagers or people beyond those listed${cafe ? ' (except the pigeon barista behind the counter)' : ''}, text, letters, watermark, logo, game UI, frame or border, illustration or anime drawing style, photorealistic real-world photo look.`
+         : `Do NOT include: characters, villagers, people, text, letters, watermark, logo, game UI, frame or border, illustration or anime drawing style, photorealistic real-world photo look.`,
+    `Aspect ratio: ${RATIO[size] || 'PORTRAIT_9_16'} (${size || '모바일 세로형'})`,
+  ].filter(Boolean).join('\n');
+}
+const ready = ()=> isImagine() ? !!(state.theme[0] || state.free.theme?.trim())
+  : state.place.length && state.time.length && (!state.place.includes('기타 자유 입력') || state.free.place?.trim());
+async function copyText(t){
+  try { await navigator.clipboard.writeText(t); }
+  catch { const a=document.createElement('textarea'); a.value=t; document.body.append(a); a.select(); document.execCommand('copy'); a.remove(); }  // file:// 등 clipboard API가 막힌 경우
+}
+function flash(btn, msg){ const n=btn.firstChild, old=n.textContent; n.textContent=msg; setTimeout(()=>n.textContent=old, 2000); }
+
+// ---- 기록·즐겨찾기 (5단계): 이 브라우저 localStorage에만 저장 ----
+const KEY = 'islandStudio.history.v1';
+let hist; try { hist = JSON.parse(localStorage.getItem(KEY)) || []; } catch { hist = []; }  // 깨진 값이면 빈 기록으로 시작
+let current = hist[0] || null;
+const saveHist = ()=>{ try { localStorage.setItem(KEY, JSON.stringify(hist)); } catch(e){ toast('기록을 저장하지 못했어요: '+e.message); } };
+function record(){
+  const prompt = buildPrompt();
+  if (hist[0]?.prompt === prompt) return hist[0];   // 같은 걸 연달아 복사하면 하나만
+  const e = {id: Date.now(), at: new Date().toLocaleString('ko-KR'), state: structuredClone(state), villagers: [...VS.sel], prompt, fav: false};
+  hist.unshift(e);
+  while (hist.length > 100) { const i = hist.findLastIndex(x=>!x.fav); if (i < 0) break; hist.splice(i, 1); }  // 즐겨찾기는 안 지움
+  saveHist(); return e;
+}
+const summaryOf = st => OPTIONS.filter(o=>o.key!=='size' && (!o.imagine || isImagine(st))).map(o=>label(o, st)).filter(Boolean).join(' · ') + ` (${st.size[0]||''})`;
+function itemHTML(e){
+  return `<div class="card" style="box-shadow:none;margin-bottom:10px">
+    <div style="font-size:12px;color:var(--sub)">${esc(e.at)}</div>
+    <div style="font-size:14px;margin:4px 0 8px">${esc(summaryOf(e.state))}${e.villagers?.length ? `<br>🐾 ${esc(e.villagers.map(id=>byId.get(id)).filter(Boolean).map(vname).join(', '))}` : ''}</div>
+    <div class="chips">
+      <button class="chip" data-act="copy" data-id="${e.id}">📋 다시 복사</button>
+      <button class="chip" data-act="load" data-id="${e.id}">✏️ 불러와 수정</button>
+      <button class="chip" data-act="fav" data-id="${e.id}" aria-pressed="${e.fav}">${e.fav?'⭐':'☆'} 즐겨찾기</button>
+      <button class="chip" data-act="del" data-id="${e.id}">🗑️</button>
+    </div></div>`;
+}
+function renderHist(){
+  $('#histList').innerHTML = hist.length ? hist.map(itemHTML).join('') : '<div class="empty"><span class="big">🐚</span>생성 기록이 아직 없어요.</div>';
+  const favs = hist.filter(e=>e.fav);
+  $('#favList').innerHTML = favs.length ? favs.map(itemHTML).join('') : '<div class="empty"><span class="big">🌟</span>즐겨찾기한 설정이 없어요.<br>기록이나 결과 화면에서 ☆를 눌러주세요.</div>';
+  current = current && hist.find(e=>e.id===current.id) || null;
+  $('#current').innerHTML = current
+    ? `<div class="summary">${esc(current.at)}<br><b>${esc(summaryOf(current.state))}</b></div><p class="hint" style="margin-top:10px">👉 Claude 대화창에 붙여넣으면 이 설정으로 이미지를 만들어요.</p>`
+    : '<div class="empty"><span class="big">📋</span>아직 복사한 프롬프트가 없어요.<br>만들기 화면에서 "생성용 프롬프트 복사"를 눌러주세요.</div>';
+  $('#btnAgain').disabled = $('#btnFav').disabled = !current;
+  $('#btnFav').firstChild.textContent = current?.fav ? '⭐ 즐겨찾기됨' : '☆ 즐겨찾기';
+}
+function loadEntry(e){
+  Object.assign(state, structuredClone(e.state));
+  if (e.villagers) { VS.sel = e.villagers.filter(id=>byId.has(id)); saveVS(); renderPicked(); }
+  render(); show('s-make');
+}
+function toggleFav(e){ e.fav = !e.fav; saveHist(); renderHist(); }
+
+$('#btnCopy').onclick = async ()=>{
+  await copyText($('#promptOut').value);
+  current = record(); renderHist();
+  flash($('#btnCopy'), '✅ 복사됨!');
+  setTimeout(()=>show('s-result'), 700);
+};
+$('#btnAgain').onclick = async ()=>{ await copyText(current.prompt); flash($('#btnAgain'), '✅ 복사됨! 대화창에 붙여넣기'); };
+$('#btnFav').onclick = ()=>toggleFav(current);
+document.addEventListener('click', async ev=>{
+  const b = ev.target.closest('[data-act]'); if(!b) return;
+  const e = hist.find(x=>x.id==b.dataset.id); if(!e) return;
+  if (b.dataset.act==='copy'){ await copyText(e.prompt); current = e; renderHist(); flash(b, '✅ 복사됨'); }
+  if (b.dataset.act==='load') loadEntry(e);
+  if (b.dataset.act==='fav') toggleFav(e);
+  if (b.dataset.act==='del' && twoTap(b, '이 기록을 지울까요?')){ hist = hist.filter(x=>x!==e); saveHist(); renderHist(); }
+});
+
+// 랜덤 조합: 항목마다 "언제 어울리는지" 규칙. 규칙 없는 항목은 언제나 허용.
+const SEA = ['해변','바다','바위 해안','부두','절벽','섬 전망'], NIGHT = ['저녁','밤','새벽'], DAY = ['오전','한낮','오후'];
+const is = (v, list) => list.includes(v);
+const RULES = {
+  weather: { '별이 많은 밤': s=>is(s.time,['밤','새벽']), '안개': s=>is(s.time,['일출','새벽','오전','밤']) },
+  mood: { '여름 휴양지': s=>is(s.place,['해변','바다','부두','섬 전망']) && is(s.weather,['맑음','구름']) && !is(s.time,NIGHT),
+          '쓸쓸한': s=>!is(s.time,['한낮']), '따뜻한': s=>!is(s.weather,['눈','비']) || s.time==='노을' },
+  camera: { '바다를 넓게': s=>is(s.place,SEA), '수평선 중심': s=>is(s.place,SEA) },
+  objects: {
+    '조개': s=>is(s.place,['해변','바다','바위 해안','부두']),
+    '풍선': s=>!is(s.time,['밤','새벽']) && !is(s.weather,['비','눈']),
+    '선물 상자': s=>!is(s.weather,['비']),
+    '바위': s=>is(s.place,['해변','바위 해안','절벽','강','폭포']),
+    '꽃': s=>is(s.place,['숲','강','마을길','광장','캠핑장','절벽','섬 전망']) && s.weather!=='눈',
+    '나무': s=>is(s.place,['숲','강','마을길','광장','캠핑장','섬 전망','폭포','절벽']),
+    '야자수': s=>is(s.place,['해변','바다','섬 전망','부두']) && s.weather!=='눈',
+    '벤치': s=>is(s.place,['마을길','광장','부두','섬 전망','해변']),
+    '등대': s=>is(s.place,['해변','바다','절벽','바위 해안','부두','섬 전망']),
+    '폭포': s=>is(s.place,['숲','강','절벽']),
+    '별': s=>is(s.time,['밤','새벽']) && !is(s.weather,['흐림','비','눈','안개']),
+    '달': s=>is(s.time,NIGHT) && !is(s.weather,['흐림','비','눈']),
+    '무지개': s=>is(s.time,DAY) && is(s.weather,['맑음','구름']),
+    '모닥불': s=>is(s.place,['캠핑장','해변']) && is(s.time,NIGHT) && !is(s.weather,['비','눈']),
+  },
+};
+const rand = a => a[Math.floor(Math.random()*a.length)];
+const shuffle = a => a.map(v=>[Math.random(),v]).sort((x,y)=>x[0]-y[0]).map(x=>x[1]);
+function randomCombo(){
+  const items = k => OPTIONS.find(o=>o.key===k).items.filter(v=>!['기타 자유 입력','자유 선택','직접 입력','없음'].includes(v));
+  const ok = (k, s) => v => !RULES[k]?.[v] || RULES[k][v](s);
+  const s = {}; s.place = rand(items('place')); s.time = rand(items('time'));
+  for (const k of ['weather','mood','camera']) s[k] = rand(items(k).filter(ok(k, s)));
+  const objs = shuffle(items('objects').filter(ok('objects', s))).slice(0, Math.floor(Math.random()*3));  // 0~2개, 적게
+  return {...s, objects: objs.length ? objs : ['없음']};
+}
+$('#btnRandom').onclick = ()=>{
+  const c = randomCombo();
+  for (const k of ['place','time','weather','mood','camera']) state[k] = [c[k]];
+  state.objects = c.objects;
+  if (isImagine()) state.theme = [rand(OPTIONS.find(o=>o.key==='theme').items)];   // 직접 적은 상상 문장은 그대로 둠
+  render();
+};
+// 자체 점검: 랜덤 300번 돌려서 규칙 위반 없는지 (콘솔에 실패만 뜸)
+for (let i=0;i<300;i++){ const c=randomCombo();
+  for (const k of ['weather','mood','camera']) console.assert(!RULES[k]?.[c[k]] || RULES[k][c[k]](c), '랜덤 규칙 위반', k, c);
+  c.objects.forEach(v=>console.assert(v==='없음' || RULES.objects[v](c), '랜덤 규칙 위반 objects', c)); }
+
+// ---- 10-B 주민 선택: 즐겨찾기·선택은 주민 id만 localStorage에 저장 (이미지는 저장 안 함) ----
+const VKEY = 'islandStudio.villagers.v1';
+const byId = new Map(VD.villagers.map(v=>[v.id, v]));
+let VS; try { VS = JSON.parse(localStorage.getItem(VKEY)) || {}; } catch { VS = {}; }
+VS.fav = (VS.fav||[]).filter(id=>byId.has(id)); VS.sel = (VS.sel||[]).filter(id=>byId.has(id));  // 데이터에 없는 id는 버림
+const saveVS = ()=>{ try { localStorage.setItem(VKEY, JSON.stringify(VS)); } catch {} };
+const koOf = (k, v) => v ? (VD.ko[k][v] || v) : '정보 없음';
+const bday = b => { const m = /^(\d+)\/(\d+)$/.exec(b||''); return m ? `${m[1]}월 ${m[2]}일` : '정보 없음'; };
+const vname = v => v.ko || v.en;
+const phHTML = (name, size) => `<span class="ph" style="width:${size}px;height:${size}px" role="img" aria-label="${esc(name)}">${esc(name.slice(0,3))}</span>`;
+// CDN 아이콘: 화면 표시용. 화면에 보일 때만 불러오고(lazy), 실패하면 이름 원형으로 바꿈
+const face = (v, size) => v.icon
+  ? `<img src="${esc(v.icon)}" alt="${esc(vname(v))}" width="${size}" height="${size}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="vph(this)">`
+  : phHTML(vname(v), size);
+window.vph = img => { img.outerHTML = phHTML(img.alt, img.width); };
+
+function vFiltered(){
+  const sp = $('#vsp').value, pe = $('#vpe').value, favOnly = $('#vfav').checked;
+  return findVillagers($('#vq').value).filter(v => (!sp || v.species===sp) && (!pe || v.personality===pe) && (!favOnly || VS.fav.includes(v.id)));
+}
+function vCard(v){
+  const sel = VS.sel.includes(v.id), fav = VS.fav.includes(v.id);
+  return `<div class="vcard">
+    <button class="vsel" data-vsel="${v.id}" aria-pressed="${sel}">${face(v, 64)}
+      <b>${esc(v.ko || '정보 없음')}</b><small>${esc(v.en)}</small>
+      <small>${esc(koOf('species', v.species))} · ${esc(koOf('personality', v.personality))}</small>
+      <small>🎂 ${bday(v.birthday)} · ${esc(koOf('hobby', v.hobby))}</small></button>
+    <button class="vfav" data-vfav="${v.id}" aria-pressed="${fav}" aria-label="${esc(vname(v))} 즐겨찾기">${fav?'⭐':'☆'}</button></div>`;
+}
+function renderVGrid(){
+  const list = vFiltered();
+  $('#vcount').textContent = `${list.length}명`;
+  $('#vgrid').innerHTML = list.length ? list.map(vCard).join('') : '<div class="empty" style="grid-column:1/-1"><span class="big">🍃</span>조건에 맞는 주민이 없어요.</div>';
+}
+function renderPicked(){
+  $('#vpickedN').textContent = VS.sel.length ? `${VS.sel.length}명` : '';
+  $('#vpicked').innerHTML = VS.sel.length
+    ? VS.sel.map(id=>{ const v = byId.get(id); return `<span class="tag">${face(v, 28)}${esc(vname(v))}<button data-vdel="${id}" aria-label="${esc(vname(v))} 빼기">✕</button></span>`; }).join('')
+    : '<p class="hint" style="margin:0">아직 고른 주민이 없어요. 아래에서 카드를 누르거나 랜덤으로 골라보세요.</p>';
+  // 카드는 다시 그리지 않고 선택 표시만 바꿈 (이미지 재요청 방지)
+  document.querySelectorAll('#vgrid .vsel').forEach(b => b.setAttribute('aria-pressed', VS.sel.includes(b.dataset.vsel)));
+}
+function renderVSource(){
+  const m = VD.meta;
+  $('#vsource').innerHTML = !m ? '<p class="hint">주민 데이터 파일(data/villagers.js)을 불러오지 못했어요.</p>' : `
+    <div class="vsrc"><b>📄 주민 정보(이름·종족·성격·생일·취미)</b><br>
+      출처: <a href="${esc(m.data.sourceUrl)}" target="_blank" rel="noopener">${esc(m.data.source)}</a><br>
+      라이선스: ${esc(m.data.license)}<br>
+      원본 자료: ${m.data.credits.map(c=>`<a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.name)}</a>`).join(', ')}<br>
+      앱 안에 저장되어 있어 인터넷 없이 검색돼요 (${esc(m.builtAt)} 기준).<br>
+      <span style="color:var(--sub)">${esc(m.koLabelsNote)}</span></div>
+    <div class="vsrc"><b>🖼️ 주민 이미지(아이콘)</b><br>
+      불러오는 곳: ${esc(m.images.host)}<br>
+      저작권: ${esc(m.images.copyright)}<br>
+      이용: ${esc(m.images.use)}<br>
+      <span style="color:var(--sub)">주민 정보의 라이선스(MIT)는 이미지에 적용되지 않아요. 이미지가 안 뜨면 이름 원형으로 표시돼요.</span></div>`;
+}
+// 필터 목록: 한국어 가나다순
+for (const [id, k] of [['#vsp','species'], ['#vpe','personality']])
+  $(id).insertAdjacentHTML('beforeend', Object.entries(VD.ko[k]).sort((a,b)=>a[1].localeCompare(b[1],'ko')).map(([en,ko])=>`<option value="${esc(en)}">${esc(ko)}</option>`).join(''));
+['#vq','#vsp','#vpe','#vfav'].forEach(id => $(id).addEventListener(id==='#vq'?'input':'change', renderVGrid));
+$('#s-villagers').addEventListener('click', ev=>{
+  const t = ev.target.closest('[data-vsel],[data-vfav],[data-vdel]'); if (!t) return;
+  if (t.dataset.vsel){ const id = t.dataset.vsel; VS.sel = VS.sel.includes(id) ? VS.sel.filter(x=>x!==id) : [...VS.sel, id]; saveVS(); renderPicked(); }
+  if (t.dataset.vdel){ VS.sel = VS.sel.filter(x=>x!==t.dataset.vdel); saveVS(); renderPicked(); }
+  if (t.dataset.vfav){ const id = t.dataset.vfav, on = !VS.fav.includes(id);
+    VS.fav = on ? [...VS.fav, id] : VS.fav.filter(x=>x!==id); saveVS();
+    t.textContent = on ? '⭐' : '☆'; t.setAttribute('aria-pressed', on);
+    if ($('#vfav').checked) renderVGrid(); }
+});
+$('#vrand').onclick = ()=>{
+  const n = Math.min(10, Math.max(1, parseInt($('#vn').value) || 1)); $('#vn').value = n;
+  const pool = vFiltered();
+  if (!pool.length) return toast('검색·필터에 맞는 주민이 없어요.');
+  VS.sel = shuffle(pool).slice(0, n).map(v=>v.id); saveVS(); renderPicked();
+  if (pool.length < n) toast(`조건에 맞는 주민이 ${pool.length}명뿐이라 ${pool.length}명만 골랐어요.`);
+};
+$('#vclear').onclick = ()=>{ VS.sel = []; saveVS(); renderPicked(); };
+renderVGrid(); renderPicked(); renderVSource();
+
+// ---- 10-C 주민대표: 사진·승인 이미지는 IndexedDB(이 브라우저), 나머지는 localStorage ----
+const idb = (()=>{
+  let dbp;
+  const open = ()=> dbp ||= new Promise((res, rej)=>{ const r = indexedDB.open('islandStudio', 1);
+    r.onupgradeneeded = ()=> r.result.createObjectStore('files'); r.onsuccess = ()=> res(r.result); r.onerror = ()=> rej(r.error); });
+  const tx = async (mode, fn)=>{ const db = await open(); return new Promise((res, rej)=>{
+    const t = db.transaction('files', mode), req = fn(t.objectStore('files'));
+    t.oncomplete = ()=> res(req.result); t.onerror = ()=> rej(t.error); }); };
+  return { get: k=>tx('readonly', s=>s.get(k)), put: (k, v)=>tx('readwrite', s=>s.put(v, k)), del: k=>tx('readwrite', s=>s.delete(k)) };
+})();
+const RKEY = 'islandStudio.rep.v1';
+const FEAT_TEMPLATE = ['얼굴형','눈(모양·위치)','눈썹','코','입','얼굴 비율','피부색','헤어스타일','머리 색','앞머리','안경','귀걸이·액세서리','의상','전체 인상'].map(k=>k+': ').join('\n');
+let REP; try { REP = JSON.parse(localStorage.getItem(RKEY)) || {}; } catch { REP = {}; }
+REP = {photoName:null, kind:'photo', features:FEAT_TEMPLATE, approved:null, ...REP};
+// 브라우저 승인이 없으면 data/approved_rep.js 의 승인 사용 (어느 브라우저에서나 같은 캐릭터). localStorage에는 저장 안 함
+if (!REP.approved && !REP.ignoreFileApproval && window.APPROVED_REP?.mediaId) REP.approved = {...window.APPROVED_REP, fromFile: true};
+const saveRep = ()=>{ try { localStorage.setItem(RKEY, JSON.stringify({...REP, approved: REP.approved?.fromFile ? null : REP.approved})); } catch(e){ toast('저장하지 못했어요: '+e.message); } };
+const MEDIA_ID = /^M[A-Za-z0-9_-]{9,15}$/;   // Canva 미디어 ID 형식 (예: MAHcFW7vY5E)
+const filledFeat = ()=> REP.features.split('\n').map(l=>l.trim()).filter(l=>{ const i = l.indexOf(':'); return i < 0 ? l : l.slice(i+1).trim(); });
+let pendingAppr = null; const urls = {};
+const showImg = (box, key, blob, alt)=>{ if (urls[key]) URL.revokeObjectURL(urls[key]);
+  $(box).innerHTML = blob ? `<img class="rimg" src="${urls[key] = URL.createObjectURL(blob)}" alt="${esc(alt)}">` : ''; };
+const okImage = f => { if (!f) return false;
+  if (!f.type.startsWith('image/')) { toast('이미지 파일만 올릴 수 있어요.'); return false; }
+  if (f.size > 15*1024*1024) { toast('15MB 이하 사진을 올려 주세요.'); return false; } return true; };
+
+function buildRepPrompt(){
+  const feat = filledFeat();
+  const avatar = REP.kind === 'avatar';
+  return [
+    `Create ONE character reference image for later wallpapers.`,
+    `Reference photo: 주민대표/${REP.photoName} (uploaded to Canva by Claude).`,
+    avatar
+      ? `The reference is already an Animal Crossing: New Horizons player avatar. Reproduce it EXACTLY as it is: same face, hair, hair color, skin tone, accessories and outfit. No restyling.`
+      : `Turn the person in the reference photo into an Animal Crossing: New Horizons player character. Keep the person's identity and appearance; change ONLY the rendering style to the game's soft rounded 3D character style.`,
+    feat.length ? `Features to keep (written by the user, Korean):\n- ${feat.join('\n- ')}` : '',
+    `Keep from the photo: face shape, eye shape and position, eyebrows, nose, mouth, face proportions, skin tone, hairstyle, hair color, bangs, glasses, earrings and other accessories, outfit, overall impression.`,
+    `Do NOT: turn them into a different person, beautify, enlarge the eyes, make the face smaller or slimmer, change skin tone, change the hairstyle, remove glasses or accessories, add anything that is not in the photo, mix in features of another person.`,
+    `Do not paste the photo into the scene; model the character as if it really exists in the game.`,
+    `Pose: full body, front view, standing naturally on island grass in soft daylight, simple background so the character is easy to check. Square image (SQUARE_1_1).`,
+    `No text, letters, watermark, logo, game UI, frame.`,
+  ].filter(Boolean).join('\n');
+}
+function renderRep(){
+  $('#rPhotoBtnText').textContent = REP.photoName ? '사진 바꾸기' : '사진 올리기';
+  $('#rPhotoDel').disabled = !REP.photoName;
+  if (!REP.photoName) $('#rPhotoView').innerHTML = '<div class="rbox">📷 아직 사진이 없어요</div>';
+  document.querySelectorAll('[data-rkind]').forEach(b => b.setAttribute('aria-pressed', b.dataset.rkind === REP.kind));
+  if ($('#rFeat').value !== REP.features) $('#rFeat').value = REP.features;
+  $('#rCopy').disabled = !REP.photoName;
+  $('#rCopyHint').textContent = REP.photoName ? `주민대표/${REP.photoName} 파일을 폴더에 넣고 대화창에 붙여넣기` : '사진을 먼저 올려 주세요';
+  $('#rPromptOut').value = REP.photoName ? buildRepPrompt() : '사진을 먼저 올려 주세요.';
+  const a = REP.approved;
+  $('#rStatus').className = 'rstatus' + (a ? ' ok' : '');
+  $('#rStatus').textContent = a
+    ? `승인됨 (${a.at})${a.fromFile ? ' · 파일(data/approved_rep.js)로 승인' : ''} · Canva ID ${a.mediaId} · ${a.fileName ? '백업 파일 ' + a.fileName : '백업 파일 없음 — Canva에서 지워지면 다시 쓸 수 없어요'}`
+    : '아직 승인한 캐릭터가 없어요.';
+  if (!a && !pendingAppr) $('#rApprovedView').innerHTML = '';
+  if ($('#rMediaId').value === '' && a) $('#rMediaId').value = a.mediaId;
+  $('#rApprBtnText').textContent = pendingAppr ? `선택됨: ${pendingAppr.name}` : (a?.fileName ? `백업 이미지 바꾸기 (지금: ${a.fileName})` : '승인 이미지 파일 고르기');
+}
+$('#rPhotoIn').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!okImage(f)) return;
+  try { await idb.put('repPhoto', f); } catch(err){ return toast('사진을 저장하지 못했어요: ' + err.message); }
+  REP.photoName = f.name; saveRep(); showImg('#rPhotoView', 'photo', f, '주민대표 사진'); renderRep();
+};
+$('#rPhotoDel').onclick = async ()=>{
+  if (!twoTap($('#rPhotoDel'), '주민대표 사진을 이 브라우저에서 지울까요? (폴더의 파일과 승인한 캐릭터는 그대로예요)')) return;
+  await idb.del('repPhoto'); REP.photoName = null; saveRep(); showImg('#rPhotoView', 'photo', null); renderRep();
+};
+document.querySelectorAll('[data-rkind]').forEach(b => b.onclick = ()=>{ REP.kind = b.dataset.rkind; saveRep(); renderRep(); });
+$('#rFeat').addEventListener('input', e => { REP.features = e.target.value; saveRep(); $('#rPromptOut').value = REP.photoName ? buildRepPrompt() : ''; });
+$('#rCopy').onclick = async ()=>{ await copyText(buildRepPrompt()); flash($('#rCopy'), '✅ 복사됨!'); };
+$('#rApprIn').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (!okImage(f)) return;
+  pendingAppr = f; showImg('#rApprovedView', 'appr', f, '승인할 캐릭터 이미지'); renderRep(); };
+$('#rApprove').onclick = async ()=>{
+  const id = $('#rMediaId').value.trim();
+  if (!MEDIA_ID.test(id)) return toast('Canva 이미지 ID 형식이 아니에요. M으로 시작하는 10~16자 ID를 넣어 주세요.');
+  const hasFile = pendingAppr || REP.approved?.fileName;
+  if (!hasFile && !twoTap($('#rApprove'), '백업 이미지 없이 승인할까요? Canva에서 이미지가 지워지면 이 캐릭터를 다시 쓸 수 없어요.')) return;
+  try { if (pendingAppr) await idb.put('repApproved', pendingAppr); } catch(err){ return toast('이미지를 저장하지 못했어요: ' + err.message); }
+  REP.approved = { mediaId: id, fileName: pendingAppr?.name || REP.approved?.fileName || null, at: new Date().toLocaleString('ko-KR') };
+  pendingAppr = null; saveRep(); renderRep(); flash($('#rApprove'), '✅ 승인됨');
+};
+$('#rReset').onclick = async ()=>{
+  if (!REP.approved && !pendingAppr) return;
+  if (!twoTap($('#rReset'), '승인한 캐릭터를 초기화할까요? (사진과 외모 특징은 그대로예요)')) return;
+  if (REP.approved?.fromFile) REP.ignoreFileApproval = true;   // 이 브라우저에서만 파일 승인 숨김
+  await idb.del('repApproved'); REP.approved = null; pendingAppr = null; $('#rMediaId').value = ''; saveRep(); showImg('#rApprovedView', 'appr', null); renderRep();
+};
+// 시작할 때 저장된 이미지 불러오기 (IndexedDB가 막힌 브라우저에서도 나머지 기능은 작동)
+renderRep();
+idb.get('repPhoto').then(b => { if (b && REP.photoName) showImg('#rPhotoView', 'photo', b, '주민대표 사진'); }).catch(()=>{});
+idb.get('repApproved').then(b => { if (b && REP.approved && !REP.approved.fromFile) showImg('#rApprovedView', 'appr', b, '승인한 캐릭터'); }).catch(()=>{});
+if (REP.approved?.fromFile && REP.approved.fileName)   // 파일 승인: 폴더의 백업 이미지를 바로 보여줌 (없으면 안 보임)
+  $('#rApprovedView').innerHTML = `<img class="rimg" src="${REP.approved.imageData || '주민대표/' + encodeURIComponent(REP.approved.fileName)}" alt="승인한 캐릭터" onerror="this.remove()">`;
+
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>show(b.dataset.go));
+$('#btnEdit').onclick = ()=>show('s-make');
+function show(id){
+  if (id === 's-home') renderHome();
+  if (id === 's-make') render();   // 🐾·👤 화면에서 바꾼 인물을 반영
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active', s.id===id));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active', b.dataset.go===id));
+  scrollTo(0,0);
+}
+render(); renderHist();
+// 고정 버튼(.dock)이 아래 메뉴에 가리지 않게: 메뉴 실제 높이(안전 영역 포함)를 재서 씀
+new ResizeObserver(()=>document.documentElement.style.setProperty('--navh', $('nav').offsetHeight + 'px')).observe($('nav'));
+// D-4 홈: 지금 상태 한눈에 + 타일로 이동
+function renderHome(){
+  const rep = REP.approved, nV = VS.sel.length, favs = hist.filter(e=>e.fav).length;
+  $('#homeStat').innerHTML = `👤 주민대표 <b>${rep ? '승인됨' : '아직 없음'}</b> · 🐾 고른 주민 <b>${nV}명</b><br>🕰️ 기록 <b>${hist.length}개</b> · ⭐ 즐겨찾기 <b>${favs}개</b>`;
+}
+document.querySelectorAll('.tile').forEach(t => t.onclick = ()=> show(t.dataset.go));
+// 8단계: 홈의 모드 카드 → 그 모드로 만들기 화면 열기 (다른 설정은 그대로)
+document.querySelectorAll('.modecard').forEach(m => m.onclick = ()=>{ state.mode = [m.dataset.mode]; render(); show('s-make'); });
+renderHome();
+// D-3: 카드 제목·아래 메뉴 앞 이모지 → Phosphor 아이콘 (표에 없는 이모지는 그대로)
+{ const ICON = {'👥':'users-three','🏝️':'island','🌅':'sun-horizon','⛅':'cloud-sun','💭':'smiley','📷':'camera','🐚':'flower-tulip',
+    '👤':'user-circle','📏':'ruler','📍':'map-pin','🧍':'person','🫂':'hand-heart','📱':'device-mobile','📋':'clipboard-text','🐾':'paw-print',
+    '🔎':'magnifying-glass','🔍':'magnifying-glass','✅':'seal-check','🖼️':'image','🕰️':'clock-counter-clockwise','⭐':'star','🌴':'tree-palm','🏠':'house','🎮':'game-controller','✨':'sparkle'};
+  const EMO = /^(\p{Extended_Pictographic}\uFE0F?(?:\u200D\p{Extended_Pictographic}\uFE0F?)*)\s*/u;
+  const PASTEL = [['#e3f3e8','#4f9e73'],['#e3f1fa','#3d8bb3'],['#fde9df','#c8714f'],['#efe7f8','#8a6bb8'],['#fbf1d2','#a8822a']];
+  const iconize = (el, i, nav) => { const t = el.firstChild; if (!t || t.nodeType !== 3) return;
+    const m = t.textContent.match(EMO); if (!m || !ICON[m[1]]) return;
+    t.textContent = t.textContent.slice(m[0].length);
+    const [bg, fg] = PASTEL[i % PASTEL.length];
+    el.insertAdjacentHTML('afterbegin', `<span class="icb" aria-hidden="true" style="${nav ? '' : 'background:'+bg+';color:'+fg}"><svg><use href="#ph-${ICON[m[1]]}"/></svg></span>`); };
+  document.querySelectorAll('.card h2').forEach((h, i) => iconize(h, i));
+  document.querySelectorAll('nav button span').forEach((s, i) => iconize(s, i, true)); }
+</script>
+</body>
+</html>
